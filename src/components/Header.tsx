@@ -53,8 +53,8 @@ export default function Header() {
         transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s',
         boxShadow: scrolled ? '0 4px 24px rgba(26,10,10,0.1)' : '0 1px 8px rgba(26,10,10,0.06)',
       }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', height: 72, gap: 20 }}>
+        <div className="header-inner">
+          <div className="header-row">
 
             {/* FAR LEFT: hamburger */}
             <button
@@ -71,19 +71,19 @@ export default function Header() {
             </button>
 
             {/* LOGO — far left, right after hamburger */}
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0, textDecoration: 'none' }}>
+            <Link href="/" className="header-logo-link">
               <img
                 src="/images/desuisse-logo.png"
                 alt="deSuisse Luxury Jewellery"
-                style={{ height: 44, width: 'auto', display: 'block' }}
+                className="header-logo-img"
               />
             </Link>
 
             {/* SPACER — pushes right icons to the right */}
-            <div style={{ flex: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }} />
 
             {/* RIGHT: language switcher + icons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div className="header-right">
               {/* Language switcher */}
               <div className="lang-switcher">
                 <button className={`lang-btn ${language === 'sq' ? 'active' : ''}`} onClick={() => setLanguage('sq')} title="Shqip">ALB</button>
@@ -154,16 +154,43 @@ export default function Header() {
       <SidebarMenu open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <style>{`
+        .header-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+        .header-row { display: flex; align-items: center; height: 72px; gap: 20px; }
+        .header-logo-link { display: flex; align-items: center; flex-shrink: 0; text-decoration: none; }
+        .header-logo-img { height: 44px; width: auto; display: block; }
+        .header-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+
         .header-icon-btn {
           background: none; border: none; cursor: pointer; padding: 8px;
           display: flex; align-items: center; justify-content: center;
           color: #1a0a0a; border-radius: 50%;
           transition: background 0.2s, color 0.2s, transform 0.15s;
           position: relative;
+          flex-shrink: 0;
         }
         .header-icon-btn:hover { background: #f7f3ee; color: #c9a84c; transform: scale(1.12); }
         .header-icon-btn:active { transform: scale(0.95); }
         @media (max-width: 768px) { .desktop-only { display: none !important; } }
+
+        /* Mobile: everything needs to shrink to fit narrow screens, or the row
+           overflows the viewport (this was the bug — icons pushed off-screen). */
+        @media (max-width: 640px) {
+          .header-inner { padding: 0 12px; }
+          .header-row { height: 60px; gap: 8px; }
+          .header-logo-img { height: 30px; }
+          .header-right { gap: 4px; }
+          .header-icon-btn { padding: 6px; }
+          .header-icon-btn svg { width: 17px; height: 17px; }
+          .lang-switcher { font-size: 9px; gap: 0; }
+          .lang-btn { padding: 4px 5px; }
+        }
+        @media (max-width: 380px) {
+          .header-inner { padding: 0 8px; }
+          .header-row { gap: 4px; }
+          .header-logo-img { height: 26px; }
+          .header-right { gap: 0px; }
+          .header-icon-btn { padding: 5px; }
+        }
       `}</style>
     </>
   );

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Product, formatPrice } from '@/data/products';
+import { Product, formatPrice, formatVariantPrice, getDefaultVariant } from '@/data/products';
 import { CATEGORIES } from '@/data/products';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
@@ -16,7 +16,9 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
   const wishlisted = isWishlisted(product.id);
   const router = useRouter();
   const [selectedVariant, setSelectedVariant] = useState(() =>
-    product.materialVariants?.length === 1 ? product.materialVariants[0].name : ''
+    product.materialVariants?.length === 1
+      ? product.materialVariants[0].name
+      : (getDefaultVariant(product)?.name || '')
   );
   const [selectedSize, setSelectedSize] = useState(() =>
     product.sizes?.length === 1 ? product.sizes[0] : ''
@@ -33,7 +35,7 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
     return 0;
   })();
   const displayPrice = currentVariant
-    ? `${currentVariant.price.toLocaleString('de-DE')}.00€`
+    ? formatVariantPrice(currentVariant)
     : formatPrice(product);
 
   useEffect(() => {
@@ -89,8 +91,13 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
           <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, color: '#1a0a0a', marginBottom: 10 }}>{product.name}</h2>
-          <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 500, color: '#1a0a0a', marginBottom: 20 }}>{displayPrice}</p>
-          <div style={{ width: 40, height: 1, background: '#e8e0d4', marginBottom: 22 }} />
+          <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 500, color: '#1a0a0a', marginBottom: 6 }}>{displayPrice}</p>
+          {currentVariant && currentVariant.priceMax && currentVariant.priceMax > currentVariant.price && (
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10.5, color: '#999', marginBottom: 14, lineHeight: 1.5 }}>
+              {language === 'sq' ? 'Çmimi përfundimtar konfirmohet pas peshimit.' : 'Final price is confirmed once the piece is weighed.'}
+            </p>
+          )}
+          <div style={{ width: 40, height: 1, background: '#e8e0d4', marginBottom: currentVariant?.priceMax ? 14 : 22 }} />
 
           {/* Material variants */}
           {hasVariants && product.materialVariants.length > 1 && (
@@ -102,7 +109,7 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
                 {product.materialVariants.map(v => (
                   <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ padding: '7px 14px', border: `1px solid ${selectedVariant === v.name ? '#1a0a0a' : '#e8e0d4'}`, background: selectedVariant === v.name ? '#1a0a0a' : '#fff', color: selectedVariant === v.name ? '#fff' : '#444', fontFamily: 'var(--font-sans)', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                     <span>{v.name}</span>
-                    <span style={{ fontSize: 10, opacity: 0.8 }}>{v.price.toLocaleString('de-DE')}€</span>
+                    <span style={{ fontSize: 10, opacity: 0.8 }}>{formatVariantPrice(v)}</span>
                   </button>
                 ))}
               </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant } from '@/data/products';
+import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, DEFAULT_VARIANT_NAME } from '@/data/products';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 import { sanitizeText, sanitizeUrl, sanitizeNumber, isValidProduct, LIMITS } from '@/lib/security';
 import CloudinaryUploader from '@/components/CloudinaryUploader';
@@ -1018,8 +1018,8 @@ export default function AdminPage() {
                   </label>
                   <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#bbb', marginBottom: 12, lineHeight: 1.6 }}>
                     {language === 'sq'
-                      ? 'Zgjidhni materialin, pastaj karatazhin dhe vendosni çmimin.'
-                      : 'Select the material, then the carat, and set a price for each.'}
+                      ? 'Zgjidhni materialin, pastaj karatazhin, dhe vendosni çmimin Min dhe Max (nëse çmimi saktë nuk dihet para se të bëhet unaza, lëreni Max bosh ose të njëjtë me Min për një çmim të saktë).'
+                      : 'Select the material, then the carat, and set a Min and Max price for each. If you don\u2019t know the exact price until it\u2019s made, set a range — leave Max blank (or equal to Min) for an exact price instead.'}
                   </p>
 
                   {/* Step 1: pick materials */}
@@ -1037,7 +1037,7 @@ export default function AdminPage() {
                             setForm({ ...form, materialVariants: current.filter(v => !v.name.startsWith(mat)) });
                           } else {
                             // add default variants for this material with both carats
-                            const newVars = CARATS.map(ct => ({ name: `${mat} ${ct}`, price: form.price || 0 }));
+                            const newVars = CARATS.map(ct => ({ name: `${mat} ${ct}`, price: form.price || 0, priceMax: undefined }));
                             setForm({ ...form, materialVariants: [...current, ...newVars] });
                           }
                         }} style={{ padding: '6px 14px', border: `1px solid ${hasAny ? '#1a0a0a' : '#e8e0d4'}`, background: hasAny ? '#1a0a0a' : '#fff', color: hasAny ? '#fff' : '#666', fontSize: 10, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
@@ -1067,7 +1067,7 @@ export default function AdminPage() {
                                     <input type="checkbox" checked={isActive} onChange={e => {
                                       const current = form.materialVariants || [];
                                       if (e.target.checked) {
-                                        setForm({ ...form, materialVariants: [...current, { name: variantName, price: form.price || 0 }] });
+                                        setForm({ ...form, materialVariants: [...current, { name: variantName, price: form.price || 0, priceMax: undefined }] });
                                       } else {
                                         setForm({ ...form, materialVariants: current.filter(v => v.name !== variantName) });
                                       }
@@ -1075,13 +1075,23 @@ export default function AdminPage() {
                                     <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: isActive ? '#1a0a0a' : '#aaa', minWidth: 40, fontWeight: isActive ? 600 : 400 }}>{ct}</span>
                                     {isActive && (
                                       <>
+                                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{language === 'sq' ? 'Min' : 'Min'}</span>
                                         <input type="number" value={existing?.price || ''} min="0"
                                           onChange={e => {
                                             const updated = (form.materialVariants || []).map(v => v.name === variantName ? { ...v, price: Number(e.target.value) } : v);
                                             setForm({ ...form, materialVariants: updated });
                                           }}
-                                          style={{ width: 90, padding: '5px 8px', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }}
+                                          style={{ width: 80, padding: '5px 8px', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }}
                                           placeholder="0"
+                                        />
+                                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{language === 'sq' ? 'Max' : 'Max'}</span>
+                                        <input type="number" value={existing?.priceMax ?? ''} min="0"
+                                          onChange={e => {
+                                            const updated = (form.materialVariants || []).map(v => v.name === variantName ? { ...v, priceMax: e.target.value ? Number(e.target.value) : undefined } : v);
+                                            setForm({ ...form, materialVariants: updated });
+                                          }}
+                                          style={{ width: 80, padding: '5px 8px', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }}
+                                          placeholder={language === 'sq' ? 'njëjtë' : 'same as min'}
                                         />
                                         <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999' }}>€</span>
                                       </>
@@ -1099,7 +1109,14 @@ export default function AdminPage() {
                   {/* Summary */}
                   {(form.materialVariants || []).length > 0 && (
                     <div style={{ marginTop: 10, padding: '8px 12px', background: '#f7f3ee', fontSize: 10, fontFamily: 'var(--font-sans)', color: '#666', lineHeight: 1.8 }}>
-                      {(form.materialVariants || []).map(v => `${v.name}: ${v.price}€`).join(' · ')}
+                      {(form.materialVariants || []).map(v => `${v.name}: ${formatVariantPrice(v)}`).join(' · ')}
+                      {!(form.materialVariants || []).some(v => v.name === DEFAULT_VARIANT_NAME) && (
+                        <div style={{ marginTop: 6, color: '#a35', fontWeight: 600 }}>
+                          {language === 'sq'
+                            ? `⚠ Nuk ka "${DEFAULT_VARIANT_NAME}" — kjo tregohet si çmim i parazgjedhur në faqen e produktit.`
+                            : `⚠ No "${DEFAULT_VARIANT_NAME}" variant — that's the default price shown on the shop and product page.`}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

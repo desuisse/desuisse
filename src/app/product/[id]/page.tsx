@@ -10,7 +10,7 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, formatPrice, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, formatPrice, formatVariantPrice, getDefaultVariant, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import { sanitizeEngraving } from '@/lib/security';
 
 // ── Engraving section ────────────────────────────────────────
@@ -328,6 +328,12 @@ export default function ProductPage() {
   useEffect(() => {
     if (!product) return;
     if (product.materialVariants?.length === 1) setSelectedVariant(product.materialVariants[0].name);
+    // For products with multiple materials, default to Yellow Gold 14ct (or the
+    // closest fallback) instead of forcing the customer to pick before seeing a price.
+    else if (product.materialVariants && product.materialVariants.length > 1) {
+      const def = getDefaultVariant(product);
+      if (def) setSelectedVariant(def.name);
+    }
     if (product.stones?.length === 1)           setSelectedStone(product.stones[0]);
     if (product.stoneSizes?.length === 1)       setSelectedStoneSize(product.stoneSizes[0]);
     if (product.sizes?.length === 1)            setSelectedSize(product.sizes[0]);
@@ -345,10 +351,10 @@ export default function ProductPage() {
 
   const hasVariants = product.materialVariants && product.materialVariants.length > 0;
   const currentVariant = hasVariants ? product.materialVariants.find(v => v.name === selectedVariant) : null;
-  const basePrice = currentVariant ? currentVariant.price : product.price;
   const displayPrice = product.hasCoupleOption
     ? (couplePrice > 0 ? `${couplePrice.toLocaleString('de-DE')}.00€` : formatPrice(product))
-    : (currentVariant ? `${basePrice.toLocaleString('de-DE')}.00€` : formatPrice(product));
+    : (currentVariant ? formatVariantPrice(currentVariant) : formatPrice(product));
+  const isPriceRange = !product.hasCoupleOption && !!currentVariant?.priceMax && currentVariant.priceMax > currentVariant.price;
 
   const images = [product.image, product.image2].filter(Boolean) as string[];
   const catLabel = CATEGORIES.find(c => c.key === product.category);
@@ -451,8 +457,9 @@ export default function ProductPage() {
                   <span style={rowLabelStyle}>{t.material}</span>
                   <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {product.materialVariants.map(v => (
-                      <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={activeBtnStyle(selectedVariant === v.name)}>
-                        {v.name}
+                      <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ ...activeBtnStyle(selectedVariant === v.name), display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px' }}>
+                        <span>{v.name}</span>
+                        <span style={{ fontSize: 10, opacity: 0.75 }}>{formatVariantPrice(v)}</span>
                       </button>
                     ))}
                   </div>
@@ -538,6 +545,11 @@ export default function ProductPage() {
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999' }}>{t.price}</span>
             <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, color: '#1a0a0a' }}>{displayPrice}</span>
           </div>
+          {isPriceRange && (
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999', marginTop: -10, marginBottom: 16, lineHeight: 1.6 }}>
+              {language === 'sq' ? 'Çmimi përfundimtar konfirmohet pas peshimit të unazës.' : 'Final price is confirmed once the piece is weighed.'}
+            </p>
+          )}
 
           {/* Availability */}
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#888', letterSpacing: '0.05em', marginBottom: 20, lineHeight: 1.7 }}>{t.availability}</p>

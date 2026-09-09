@@ -9,7 +9,8 @@
  */
 export interface MaterialVariant {
   name: string;
-  price: number;
+  price: number;     // minimum / base price (or the exact price, if priceMax is not set)
+  priceMax?: number; // maximum price — set this when the exact weight/price is only known once made
 }
 
 export type Category =
@@ -109,15 +110,42 @@ export async function saveProductsToDb(products: Product[]): Promise<SaveResult>
   }
 }
 
-export function formatPrice(product: Product): string {
-  if (product.materialVariants && product.materialVariants.length > 0) {
-    const prices = product.materialVariants.map(v => v.price);
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    if (min === max) return `${min.toLocaleString('de-DE')}.00€`;
-    return `${min.toLocaleString('de-DE')}.00€ – ${max.toLocaleString('de-DE')}.00€`;
+// The material + carat combination shown by default everywhere a product is
+// listed (shop grid, quick view, product page) before the customer picks
+// something else. Custom pieces are quoted across many materials/carats —
+// showing the full silver-to-platinum spread by default was confusing, so
+// we anchor on one sensible default instead.
+export const DEFAULT_VARIANT_NAME = 'Yellow Gold 14ct';
+
+/**
+ * Picks the variant to show by default: exact "Yellow Gold 14ct" match first,
+ * then any Yellow Gold carat, then just the first variant the admin added.
+ */
+export function getDefaultVariant(product: Product): MaterialVariant | null {
+  if (!product.materialVariants || product.materialVariants.length === 0) return null;
+  return (
+    product.materialVariants.find(v => v.name === DEFAULT_VARIANT_NAME) ||
+    product.materialVariants.find(v => v.name.startsWith('Yellow Gold')) ||
+    product.materialVariants[0]
+  );
+}
+
+/** Formats a single variant's price as an exact figure or a min–max range. */
+export function formatVariantPrice(variant: MaterialVariant): string {
+  const { price, priceMax } = variant;
+  if (priceMax && priceMax > price) {
+    return `${price.toLocaleString('de-DE')}.00€ – ${priceMax.toLocaleString('de-DE')}.00€`;
   }
-  if (product.priceMax) {
+  return `${price.toLocaleString('de-DE')}.00€`;
+}
+
+export function formatPrice(product: Product): string {
+  // Prefer the default variant (Yellow Gold 14ct) over showing every
+  // material's price mashed into one big range.
+  const defaultVariant = getDefaultVariant(product);
+  if (defaultVariant) return formatVariantPrice(defaultVariant);
+
+  if (product.priceMax && product.priceMax > product.price) {
     return `${product.price.toLocaleString('de-DE')}.00€ – ${product.priceMax.toLocaleString('de-DE')}.00€`;
   }
   return `${product.price.toLocaleString('de-DE')}.00€`;
