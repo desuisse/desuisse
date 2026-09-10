@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Product, formatPrice, formatVariantPrice, getDefaultVariant } from '@/data/products';
+import { Product, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, RING_SIZE_MIN, RING_SIZE_MAX } from '@/data/products';
 import { CATEGORIES } from '@/data/products';
+import RingSizeSlider from '@/components/RingSizeSlider';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -21,22 +22,30 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
       : (getDefaultVariant(product)?.name || '')
   );
   const [selectedSize, setSelectedSize] = useState(() =>
-    product.sizes?.length === 1 ? product.sizes[0] : ''
+    isRingCategory(product.category)
+      ? String(Math.round((RING_SIZE_MIN + RING_SIZE_MAX) / 2))
+      : (product.sizes?.length === 1 ? product.sizes[0] : '')
   );
   const [qty, setQty] = useState(1);
 
+  const isRing = isRingCategory(product.category);
   const hasVariants = product.materialVariants && product.materialVariants.length > 0;
   const currentVariant = hasVariants ? product.materialVariants.find(v => v.name === selectedVariant) : null;
+  const selectedSizeNum = selectedSize ? Number(selectedSize) : null;
+  const ringSizePriceApplies = isRing && !!selectedSizeNum && !!currentVariant;
   // Pick a reasonable default for unitPrice: selected variant > product.price > first variant > 0
   const resolvedUnitPrice = (() => {
+    if (ringSizePriceApplies) return priceForRingSize(currentVariant!, selectedSizeNum as number);
     if (currentVariant) return currentVariant.price;
     if (product.price > 0) return product.price;
     if (hasVariants && product.materialVariants.length > 0) return product.materialVariants[0].price;
     return 0;
   })();
-  const displayPrice = currentVariant
-    ? formatVariantPrice(currentVariant)
-    : formatPrice(product);
+  const displayPrice = ringSizePriceApplies
+    ? `${priceForRingSize(currentVariant!, selectedSizeNum as number).toLocaleString('de-DE')}.00€`
+    : currentVariant
+      ? formatVariantPrice(currentVariant)
+      : formatPrice(product);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -109,7 +118,7 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
                 {product.materialVariants.map(v => (
                   <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ padding: '7px 14px', border: `1px solid ${selectedVariant === v.name ? '#1a0a0a' : '#e8e0d4'}`, background: selectedVariant === v.name ? '#1a0a0a' : '#fff', color: selectedVariant === v.name ? '#fff' : '#444', fontFamily: 'var(--font-sans)', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
                     <span>{v.name}</span>
-                    <span style={{ fontSize: 10, opacity: 0.8 }}>{formatVariantPrice(v)}</span>
+                    <span style={{ fontSize: 10, opacity: 0.8 }}>{ringSizePriceApplies ? formatRingSizePrice(v, selectedSizeNum as number) : formatVariantPrice(v)}</span>
                   </button>
                 ))}
               </div>
@@ -128,7 +137,14 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
           )}
 
           {/* Sizes */}
-          {product.sizes && product.sizes.length > 1 && (
+          {isRing ? (
+            <div style={{ marginBottom: 22 }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>
+                {t.size}
+              </p>
+              <RingSizeSlider value={selectedSizeNum || RING_SIZE_MIN} onChange={s => setSelectedSize(String(s))} />
+            </div>
+          ) : product.sizes && product.sizes.length > 1 && (
             <div style={{ marginBottom: 22 }}>
               <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>
                 {t.size}{selectedSize ? ': ' : ''}<span style={{ color: '#1a0a0a' }}>{selectedSize}</span>
@@ -142,7 +158,7 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
               </div>
             </div>
           )}
-          {product.sizes && product.sizes.length === 1 && (
+          {!isRing && product.sizes && product.sizes.length === 1 && (
             <div style={{ marginBottom: 22 }}>
               <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 4 }}>
                 {t.size}

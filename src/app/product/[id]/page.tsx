@@ -10,7 +10,8 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, formatPrice, formatVariantPrice, getDefaultVariant, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import RingSizeSlider from '@/components/RingSizeSlider';
 import { sanitizeEngraving } from '@/lib/security';
 
 // ── Engraving section ────────────────────────────────────────
@@ -101,15 +102,18 @@ function CoupleSection({ product, language, onPriceChange }: {
   const [womenEnabled, setWomenEnabled] = useState(true);
   const [menEnabled, setMenEnabled] = useState(true);
   const [womenVariant, setWomenVariant] = useState('');
-  const [womenSize, setWomenSize] = useState('');
+  const [womenSize, setWomenSize] = useState(String(Math.round((RING_SIZE_MIN + RING_SIZE_MAX) / 2)));
   const [menVariant, setMenVariant] = useState('');
-  const [menSize, setMenSize] = useState('');
+  const [menSize, setMenSize] = useState(String(Math.round((RING_SIZE_MIN + RING_SIZE_MAX) / 2)));
 
-  const getPrice = (variantName: string) =>
-    product.materialVariants.find(v => v.name === variantName)?.price || 0;
+  const getPrice = (variantName: string, size: string) => {
+    const v = product.materialVariants.find(v => v.name === variantName);
+    if (!v) return 0;
+    return priceForRingSize(v, Number(size) || RING_SIZE_MIN);
+  };
 
-  const womenPrice = womenEnabled && womenVariant ? getPrice(womenVariant) : 0;
-  const menPrice = menEnabled && menVariant ? getPrice(menVariant) : 0;
+  const womenPrice = womenEnabled && womenVariant ? getPrice(womenVariant, womenSize) : 0;
+  const menPrice = menEnabled && menVariant ? getPrice(menVariant, menSize) : 0;
   const total = womenPrice + menPrice;
 
   useEffect(() => { onPriceChange(total); }, [total, onPriceChange]);
@@ -128,12 +132,6 @@ function CoupleSection({ product, language, onPriceChange }: {
     padding: '8px 14px', border: `1px solid ${active ? '#1a0a0a' : '#e8e0d4'}`,
     background: active ? '#1a0a0a' : '#fff', color: active ? '#fff' : '#444',
     fontFamily: 'var(--font-sans)', fontSize: 11, cursor: 'pointer', transition: 'all 0.18s',
-  });
-
-  const sizeBtn = (active: boolean): React.CSSProperties => ({
-    width: 44, height: 40, border: `1px solid ${active ? '#1a0a0a' : '#e8e0d4'}`,
-    background: active ? '#1a0a0a' : '#fff', color: active ? '#fff' : '#444',
-    fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.18s',
   });
 
   const GenderRing = ({ title, enabled, onToggle, variant, setVariant, size, setSize, price }: {
@@ -156,7 +154,7 @@ function CoupleSection({ product, language, onPriceChange }: {
 
       {enabled && (
         <div style={{ padding: '20px' }}>
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 20 }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.material}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {product.materialVariants.map(v => (
@@ -168,12 +166,8 @@ function CoupleSection({ product, language, onPriceChange }: {
           </div>
           <div>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.size}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-              {product.sizes.map(s => (
-                <button key={s} onClick={() => setSize(s === size ? '' : s)} style={sizeBtn(size === s)}>{s}</button>
-              ))}
-            </div>
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa' }}>{tl.sizeAdj}</p>
+            <RingSizeSlider value={Number(size) || RING_SIZE_MIN} onChange={s => setSize(String(s))} />
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa', marginTop: 8 }}>{tl.sizeAdj}</p>
           </div>
         </div>
       )}
@@ -336,7 +330,13 @@ export default function ProductPage() {
     }
     if (product.stones?.length === 1)           setSelectedStone(product.stones[0]);
     if (product.stoneSizes?.length === 1)       setSelectedStoneSize(product.stoneSizes[0]);
-    if (product.sizes?.length === 1)            setSelectedSize(product.sizes[0]);
+    if (isRingCategory(product.category)) {
+      // Rings use a 45–75 slider, not a pick list — default to a common
+      // middle size (52) so a price is visible right away.
+      setSelectedSize(String(Math.round((RING_SIZE_MIN + RING_SIZE_MAX) / 2)));
+    } else if (product.sizes?.length === 1) {
+      setSelectedSize(product.sizes[0]);
+    }
   }, [product]);
 
   if (!product) return (
@@ -349,12 +349,21 @@ export default function ProductPage() {
     </>
   );
 
+  const isRing = isRingCategory(product.category);
   const hasVariants = product.materialVariants && product.materialVariants.length > 0;
   const currentVariant = hasVariants ? product.materialVariants.find(v => v.name === selectedVariant) : null;
+  const selectedSizeNum = selectedSize ? Number(selectedSize) : null;
+  const ringSizePriceApplies = isRing && !!selectedSizeNum && !!currentVariant;
+
   const displayPrice = product.hasCoupleOption
     ? (couplePrice > 0 ? `${couplePrice.toLocaleString('de-DE')}.00€` : formatPrice(product))
-    : (currentVariant ? formatVariantPrice(currentVariant) : formatPrice(product));
-  const isPriceRange = !product.hasCoupleOption && !!currentVariant?.priceMax && currentVariant.priceMax > currentVariant.price;
+    : currentVariant
+      ? (ringSizePriceApplies ? `${priceForRingSize(currentVariant, selectedSizeNum as number).toLocaleString('de-DE')}.00€` : formatVariantPrice(currentVariant))
+      : formatPrice(product);
+  // A ring size resolves the material's Min–Max range to one exact number,
+  // so the "confirmed after weighing" hedge only makes sense when there's
+  // no slider driving it to a concrete figure (e.g. bracelets, necklaces).
+  const isPriceRange = !product.hasCoupleOption && !ringSizePriceApplies && !!currentVariant?.priceMax && currentVariant.priceMax > currentVariant.price;
 
   const images = [product.image, product.image2].filter(Boolean) as string[];
   const catLabel = CATEGORIES.find(c => c.key === product.category);
@@ -459,7 +468,7 @@ export default function ProductPage() {
                     {product.materialVariants.map(v => (
                       <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ ...activeBtnStyle(selectedVariant === v.name), display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px' }}>
                         <span>{v.name}</span>
-                        <span style={{ fontSize: 10, opacity: 0.75 }}>{formatVariantPrice(v)}</span>
+                        <span style={{ fontSize: 10, opacity: 0.75 }}>{ringSizePriceApplies ? formatRingSizePrice(v, selectedSizeNum as number) : formatVariantPrice(v)}</span>
                       </button>
                     ))}
                   </div>
@@ -516,7 +525,15 @@ export default function ProductPage() {
               )}
 
               {/* Size row */}
-              {product.sizes.length > 1 && (
+              {isRing ? (
+                <div style={rowStyle}>
+                  <span style={rowLabelStyle}>{t.size}</span>
+                  <div style={{ flex: 1 }}>
+                    <RingSizeSlider value={selectedSizeNum || RING_SIZE_MIN} onChange={s => setSelectedSize(String(s))} />
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa', marginTop: 8 }}>{t.sizeAdjust}</p>
+                  </div>
+                </div>
+              ) : product.sizes.length > 1 ? (
                 <div style={rowStyle}>
                   <span style={rowLabelStyle}>{t.size}</span>
                   <div style={{ flex: 1 }}>
@@ -528,15 +545,14 @@ export default function ProductPage() {
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa' }}>{t.sizeAdjust}</p>
                   </div>
                 </div>
-              )}
-              {product.sizes.length === 1 && (
+              ) : product.sizes.length === 1 ? (
                 <div style={rowStyle}>
                   <span style={rowLabelStyle}>{t.size}</span>
                   <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
                     {product.sizes[0]}
                   </div>
                 </div>
-              )}
+              ) : null}
             </>
           )}
 
@@ -578,6 +594,8 @@ export default function ProductPage() {
               let unitPrice = 0;
               if (product.hasCoupleOption && couplePrice > 0) {
                 unitPrice = couplePrice;
+              } else if (ringSizePriceApplies) {
+                unitPrice = priceForRingSize(currentVariant!, selectedSizeNum as number);
               } else if (currentVariant) {
                 unitPrice = currentVariant.price;
               } else if (product.price > 0) {

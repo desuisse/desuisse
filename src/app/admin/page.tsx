@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, DEFAULT_VARIANT_NAME } from '@/data/products';
+import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 import { sanitizeText, sanitizeUrl, sanitizeNumber, isValidProduct, LIMITS } from '@/lib/security';
 import CloudinaryUploader from '@/components/CloudinaryUploader';
@@ -352,6 +352,11 @@ export default function AdminPage() {
 
     // Sanitize stone sizes
     const cleanStoneSizes = (form.stoneSizes || []).map(s => sanitizeText(s, 20)).filter(Boolean);
+    // Rings always offer the full 45–75 slider — no need for the admin to
+    // hand-pick individual sizes (and no way to accidentally under-select).
+    const cleanSizes = isRingCategory(form.category)
+      ? RING_SIZES
+      : (form.sizes || []).map(s => sanitizeText(s, 10)).filter(Boolean);
 
     let updated: Product[];
     const cleanDescSq = sanitizeText(form.descriptionSq || '', LIMITS.DESCRIPTION);
@@ -369,7 +374,7 @@ export default function AdminPage() {
         featured: Boolean(form.featured),
         materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
         materialVariants: cleanVariants,
-        sizes: (form.sizes || []).map(s => sanitizeText(s, 10)).filter(Boolean),
+        sizes: cleanSizes,
         sku: cleanSku || undefined,
         stones: (form.stones || []).map(s => sanitizeText(s, 30)).filter(Boolean),
         stoneSizes: cleanStoneSizes,
@@ -393,7 +398,7 @@ export default function AdminPage() {
               featured: Boolean(form.featured),
               materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
               materialVariants: cleanVariants,
-              sizes: (form.sizes || []).map(s => sanitizeText(s, 10)).filter(Boolean),
+              sizes: cleanSizes,
               sku: cleanSku || undefined,
               stones: (form.stones || []).map(s => sanitizeText(s, 30)).filter(Boolean),
               stoneSizes: cleanStoneSizes,
@@ -1035,6 +1040,9 @@ export default function AdminPage() {
                           if (hasAny) {
                             // remove all variants of this material
                             setForm({ ...form, materialVariants: current.filter(v => !v.name.startsWith(mat)) });
+                          } else if (mat === 'Silver' || mat === 'Platinum') {
+                            // Silver and Platinum aren't sold by karat — one variant, no carat suffix
+                            setForm({ ...form, materialVariants: [...current, { name: mat, price: form.price || 0, priceMax: undefined }] });
                           } else {
                             // add default variants for this material with both carats
                             const newVars = CARATS.map(ct => ({ name: `${mat} ${ct}`, price: form.price || 0, priceMax: undefined }));
@@ -1054,11 +1062,41 @@ export default function AdminPage() {
                         2. {language === 'sq' ? 'Zgjidhni Karatazhin & Çmimin' : 'Select Carat & Price'}
                       </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {MATERIAL_OPTIONS.filter(mat => (form.materialVariants || []).some(v => v.name.startsWith(mat))).map(mat => (
+                        {MATERIAL_OPTIONS.filter(mat => (form.materialVariants || []).some(v => v.name.startsWith(mat))).map(mat => {
+                          const materialHasCarat = mat !== 'Silver' && mat !== 'Platinum';
+                          return (
                           <div key={mat} style={{ background: '#f7f3ee', padding: '12px 14px', border: '1px solid #e8e0d4' }}>
                             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: '#1a0a0a', marginBottom: 10 }}>{mat}</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {CARATS.map(ct => {
+                              {!materialHasCarat ? (
+                                // Silver / Platinum: no carat — one row, straight to Min/Max
+                                (() => {
+                                  const existing = (form.materialVariants || []).find(v => v.name === mat);
+                                  return (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Min</span>
+                                      <input type="number" value={existing?.price || ''} min="0"
+                                        onChange={e => {
+                                          const updated = (form.materialVariants || []).map(v => v.name === mat ? { ...v, price: Number(e.target.value) } : v);
+                                          setForm({ ...form, materialVariants: updated });
+                                        }}
+                                        style={{ width: 80, padding: '5px 8px', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }}
+                                        placeholder="0"
+                                      />
+                                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Max</span>
+                                      <input type="number" value={existing?.priceMax ?? ''} min="0"
+                                        onChange={e => {
+                                          const updated = (form.materialVariants || []).map(v => v.name === mat ? { ...v, priceMax: e.target.value ? Number(e.target.value) : undefined } : v);
+                                          setForm({ ...form, materialVariants: updated });
+                                        }}
+                                        style={{ width: 80, padding: '5px 8px', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }}
+                                        placeholder={language === 'sq' ? 'njëjtë' : 'same as min'}
+                                      />
+                                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999' }}>€</span>
+                                    </div>
+                                  );
+                                })()
+                              ) : CARATS.map(ct => {
                                 const variantName = `${mat} ${ct}`;
                                 const existing = (form.materialVariants || []).find(v => v.name === variantName);
                                 const isActive = !!existing;
@@ -1101,7 +1139,8 @@ export default function AdminPage() {
                               })}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1127,19 +1166,27 @@ export default function AdminPage() {
                     <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 8 }}>
                       {language === 'sq' ? 'Madhësitë' : 'Sizes'}
                     </label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {(form.category === 'everyday-rings' || form.category === 'engagement-rings' || form.category === 'wedding-rings' ? RING_SIZES : form.category === 'bracelets' ? BRACELET_SIZES : NECKLACE_SIZES).map(s => {
-                        const active = (form.sizes || []).includes(s);
-                        return (
-                          <button key={s} type="button" onClick={() => {
-                            const szs = form.sizes || [];
-                            setForm({ ...form, sizes: active ? szs.filter(x => x !== s) : [...szs, s] });
-                          }} style={{ width: 44, height: 32, border: `1px solid ${active ? '#1a0a0a' : '#e8e0d4'}`, background: active ? '#1a0a0a' : '#fff', color: active ? '#fff' : '#666', fontSize: 10, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
-                            {s}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {isRingCategory(form.category) ? (
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#888', lineHeight: 1.6, background: '#f7f3ee', padding: '10px 12px', border: '1px solid #e8e0d4' }}>
+                        {language === 'sq'
+                          ? 'Unazat ofrohen automatikisht nga madhësia 45 deri 75 (rrëshqitës në faqen e produktit) — nuk ka nevojë t\u2019i zgjidhni.'
+                          : 'Rings automatically offer the full 45–75 size slider on the product page — nothing to pick here.'}
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {(form.category === 'bracelets' ? BRACELET_SIZES : NECKLACE_SIZES).map(s => {
+                          const active = (form.sizes || []).includes(s);
+                          return (
+                            <button key={s} type="button" onClick={() => {
+                              const szs = form.sizes || [];
+                              setForm({ ...form, sizes: active ? szs.filter(x => x !== s) : [...szs, s] });
+                            }} style={{ width: 44, height: 32, border: `1px solid ${active ? '#1a0a0a' : '#e8e0d4'}`, background: active ? '#1a0a0a' : '#fff', color: active ? '#fff' : '#666', fontSize: 10, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                              {s}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 

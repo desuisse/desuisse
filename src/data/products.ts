@@ -46,7 +46,7 @@ export const MATERIAL_OPTIONS = ['Yellow Gold','White Gold','Rose Gold','Silver'
 export const CARATS = ['14ct', '18ct'];
 export const STONE_OPTIONS = ['Diamond', 'Lab Diamond', 'Moissanite', 'No Stone'];
 export const STONE_SIZE_OPTIONS = ['0.20ct','0.30ct','0.50ct','0.75ct','1.00ct','1.50ct','2.00ct','3.75mm','4.00mm','4.50mm','5.00mm'];
-export const RING_SIZES = ['44','46','48','50','52','54','56','58','60'];
+export const RING_SIZES = Array.from({ length: 75 - 45 + 1 }, (_, i) => String(45 + i)); // '45'..'75'
 export const BRACELET_SIZES = ['16cm','17cm','18cm','19cm','20cm'];
 export const NECKLACE_SIZES = ['40cm','45cm','50cm','55cm','60cm'];
 export const ENGRAVING_SYMBOLS = ['♡','♥','∞','✦','✶','☆','★','◆','✿','☾'];
@@ -149,4 +149,35 @@ export function formatPrice(product: Product): string {
     return `${product.price.toLocaleString('de-DE')}.00€ – ${product.priceMax.toLocaleString('de-DE')}.00€`;
   }
   return `${product.price.toLocaleString('de-DE')}.00€`;
+}
+
+export const RING_CATEGORIES: Category[] = ['everyday-rings', 'engagement-rings', 'wedding-rings'];
+export function isRingCategory(category: Category): boolean {
+  return RING_CATEGORIES.includes(category);
+}
+
+// Ring sizes are sold as a continuous 45–75 slider (EU sizing), not a fixed
+// checklist. Since a size-75 ring uses meaningfully more metal than a
+// size-45 one, the material's Min price is treated as the price at size 45
+// and Max as the price at size 75, stepping up every 3 sizes in between
+// (so the number doesn't jitter on every single click of the slider).
+export const RING_SIZE_MIN = 45;
+export const RING_SIZE_MAX = 75;
+export const RING_SIZE_PRICE_STEP = 3;
+
+export function priceForRingSize(variant: MaterialVariant, size: number): number {
+  const min = variant.price;
+  const max = variant.priceMax && variant.priceMax > min ? variant.priceMax : min;
+  if (max === min) return min;
+
+  const span = RING_SIZE_MAX - RING_SIZE_MIN; // 30
+  const tierCount = Math.floor(span / RING_SIZE_PRICE_STEP); // 10 steps of 3
+  const clamped = Math.min(RING_SIZE_MAX, Math.max(RING_SIZE_MIN, size));
+  const tier = Math.min(tierCount, Math.floor((clamped - RING_SIZE_MIN) / RING_SIZE_PRICE_STEP));
+
+  return Math.round(min + (max - min) * (tier / tierCount));
+}
+
+export function formatRingSizePrice(variant: MaterialVariant, size: number): string {
+  return `${priceForRingSize(variant, size).toLocaleString('de-DE')}.00€`;
 }

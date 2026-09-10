@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import ProcessVideo from '@/components/ProcessVideo';
 import { useLanguage } from '@/lib/LanguageContext';
 
 function useReveal() {
@@ -33,6 +34,10 @@ export default function CustomDesignPage() {
     how: language === 'sq'
       ? 'Caktoni një takim në dyqanin tonë, diskutoni idenë me ne dhe me kënaqësinë tuaj do të vazhdojmë me prodhimin.'
       : 'Schedule a meeting in our shop, discuss it with us and with your satisfaction we will continue with the production.',
+    videoTitle: language === 'sq' ? 'Shikoni Procesin' : 'Watch the Process',
+    videoCaption: language === 'sq'
+      ? 'Nga skica deri te unaza e përfunduar — si i bëjmë bizhuteritë tona.'
+      : 'From sketch to finished ring — how our pieces are made.',
     scheduleBtn: language === 'sq' ? 'CAKTO NJË TAKIM' : 'SCHEDULE A MEETING',
     customersTitle: language === 'sq' ? 'Klientë të Kënaqur' : 'Satisfied Customers',
     galleryTitle: language === 'sq' ? 'Punimet Tona' : 'Our Work',
@@ -89,6 +94,20 @@ export default function CustomDesignPage() {
           >
             {t.scheduleBtn}
           </Link>
+        </section>
+      </Reveal>
+
+      {/* Watch the process — click-to-play, no cost to page load until clicked */}
+      <Reveal delay={100}>
+        <section style={{ maxWidth: 1100, margin: '0 auto 80px', padding: '0 40px' }}>
+          <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 24 }}>{t.videoTitle}</h2>
+          <div style={{ width: 40, height: 1, background: '#c9a84c', margin: '0 auto 28px' }} />
+          <ProcessVideo
+            src="/videos/ring-making-process.mp4"
+            poster="/images/process-poster.jpg"
+            title={t.videoTitle}
+          />
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#aaa', textAlign: 'center', marginTop: 16 }}>{t.videoCaption}</p>
         </section>
       </Reveal>
 
