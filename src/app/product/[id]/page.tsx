@@ -297,17 +297,17 @@ const SERVICE_ITEMS: FeatureItem[] = [
     noteEn: 'Karlovy Vary & Pejë', noteSq: 'Karlovy Vary dhe Pejë',
   },
   {
-    image: '/images/boutique-2.jpg', href: '/contact',
+    image: '/images/craft-sketching.jpg', href: '/contact',
     en: 'Appointments', sq: 'Takime',
     noteEn: 'One-to-one, in person or online', noteSq: 'Personalisht ose online',
   },
   {
-    image: '/images/art1.jpg', href: '/custom-design',
+    image: '/images/craft-soldering.jpg', href: '/custom-design',
     en: 'Bespoke Rings', sq: 'Unaza të Personalizuara',
     noteEn: 'Designed with you, made for you', noteSq: 'Dizajnuar bashkë me ju',
   },
   {
-    image: '/images/boutique-3.jpg', href: '/sizing-service',
+    image: '/images/craft-setting.jpg', href: '/sizing-service',
     en: 'Sizing & Service', sq: 'Madhësia dhe Shërbimi',
     noteEn: 'Free resizing, for life', noteSq: 'Rregullim falas, përgjithmonë',
   },
@@ -315,19 +315,19 @@ const SERVICE_ITEMS: FeatureItem[] = [
 
 const EDUCATION_ITEMS: FeatureItem[] = [
   {
-    image: '/images/chop4.jpg', href: '/diamond-guide',
+    image: '/images/diamond-loupe.jpg', href: '/diamond-guide',
     en: 'Diamond Guidance', sq: 'Udhëzime për Diamantin',
     noteEn: 'Natural, lab-grown and moissanite — what actually differs.',
     noteSq: 'Natyror, laboratorik dhe moissanite — çfarë ndryshon vërtet.',
   },
   {
-    image: '/images/art3.webp', href: '/ring-sizer',
+    image: '/images/rings-worn.jpg', href: '/ring-sizer',
     en: 'Find Your Ring Size', sq: 'Gjeni Madhësinë Tuaj',
     noteEn: 'Measure at home in under a minute.',
     noteSq: 'Matni në shtëpi për më pak se një minutë.',
   },
   {
-    image: '/images/art2.jpg', href: '/jewelry-care',
+    image: '/images/ring-boxes.jpg', href: '/jewelry-care',
     en: 'Caring for Your Piece', sq: 'Kujdesi për Pjesën Tuaj',
     noteEn: 'Keep it looking like the day you collected it.',
     noteSq: 'Mbajeni si ditën e parë.',

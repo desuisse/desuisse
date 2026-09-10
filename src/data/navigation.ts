@@ -91,7 +91,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
     images: [
       { image: '/images/cat-engagement.jpg', href: '/shop?category=engagement-rings', en: 'Engagement Rings', sq: 'Unaza Fejese' },
-      { image: '/images/hero-ring.jpg', href: '/custom-design', en: 'Bespoke Design', sq: 'Dizajn i Personalizuar' },
+      { image: '/images/craft-sketching.jpg', href: '/custom-design', en: 'Bespoke Design', sq: 'Dizajn i Personalizuar' },
     ],
   },
   {
@@ -123,7 +123,7 @@ export const NAV_ITEMS: NavItem[] = [
     ],
     images: [
       { image: '/images/cat-wedding.jpg', href: '/shop?category=wedding-rings', en: 'Wedding Rings', sq: 'Unaza Martese' },
-      { image: '/images/cat-wedding1.jpg', href: '/ring-story', en: 'The Story of the Ring', sq: 'Historia e Unazës' },
+      { image: '/images/rings-worn.jpg', href: '/ring-story', en: 'The Story of the Ring', sq: 'Historia e Unazës' },
     ],
   },
   {
@@ -187,8 +187,8 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
     images: [
-      { image: '/images/art1.jpg', href: '/custom-design', en: 'Bespoke Service', sq: 'Shërbimi i Personalizuar' },
-      { image: '/images/art2.jpg', href: '/ring-story', en: 'The Craft', sq: 'Zanati' },
+      { image: '/images/craft-soldering.jpg', href: '/custom-design', en: 'Bespoke Service', sq: 'Shërbimi i Personalizuar' },
+      { image: '/images/craft-setting.jpg', href: '/ring-story', en: 'The Craft', sq: 'Zanati' },
     ],
   },
 
@@ -221,7 +221,7 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
     images: [
-      { image: '/images/chop4.jpg', href: '/diamond-guide', en: 'Diamond Guide', sq: 'Udhëzuesi i Diamantit' },
+      { image: '/images/diamond-loupe.jpg', href: '/diamond-guide', en: 'Diamond Guide', sq: 'Udhëzuesi i Diamantit' },
     ],
   },
   {

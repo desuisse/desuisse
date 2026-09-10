@@ -11,35 +11,32 @@ interface RingSizeSliderProps {
 
 /**
  * Drag-to-select ring size, EU sizing 45–75 by default.
- * Uses a native <input type="range"> underneath (so it's keyboard- and
- * touch-accessible for free) with custom styling + a floating value badge
- * on top, since a native range thumb can't show text by itself.
+ *
+ * Why the track is a separate element from the input:
+ * the input used to BE the track — 4px tall — with a 26px thumb drawn
+ * overflowing it. A native range input only receives pointer events inside
+ * its own box, so on a phone you had a 4px-tall target: most presses landed
+ * on the wrapper instead of the input, the drag never started, and it felt
+ * like you had to let go and grab again to move the number.
+ *
+ * Now the input is a transparent 44px-tall strip covering the whole control
+ * (a proper thumb-sized target), and the visible 4px track is painted by the
+ * divs underneath it with pointer-events: none. Same native input, same
+ * keyboard and screen-reader behaviour — just a target you can actually hold.
  */
 export default function RingSizeSlider({ value, onChange, min = RING_SIZE_MIN, max = RING_SIZE_MAX }: RingSizeSliderProps) {
   const percent = ((value - min) / (max - min)) * 100;
 
   return (
-    <div style={{ width: '100%' }}>
-      <div style={{ position: 'relative', height: 36, display: 'flex', alignItems: 'center' }}>
-        <div
-          style={{
-            position: 'absolute',
-            left: `${percent}%`,
-            transform: 'translateX(-50%)',
-            top: -8,
-            background: '#1a0a0a',
-            color: '#fff',
-            fontFamily: 'var(--font-sans)',
-            fontSize: 12,
-            fontWeight: 700,
-            padding: '3px 10px',
-            borderRadius: 12,
-            pointerEvents: 'none',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {value}
+    <div className="ds-slider-wrap">
+      <div className="ds-slider">
+        <div className="ds-slider-badge" style={{ left: `${percent}%` }}>{value}</div>
+
+        {/* Painted track — purely visual, never receives the pointer */}
+        <div className="ds-slider-track" aria-hidden="true">
+          <div className="ds-slider-fill" style={{ width: `${percent}%` }} />
         </div>
+
         <input
           type="range"
           min={min}
@@ -47,14 +44,14 @@ export default function RingSizeSlider({ value, onChange, min = RING_SIZE_MIN, m
           step={1}
           value={value}
           onChange={e => onChange(Number(e.target.value))}
-          className="ring-size-range"
-          style={{ ['--fill' as string]: `${percent}%`, marginTop: 20 } as React.CSSProperties}
+          className="ds-slider-input"
           aria-label="Ring size"
         />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#bbb' }}>{min}</span>
-        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#bbb' }}>{max}</span>
+
+      <div className="ds-slider-scale">
+        <span>{min}</span>
+        <span>{max}</span>
       </div>
     </div>
   );

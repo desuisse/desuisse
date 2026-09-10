@@ -16,7 +16,7 @@ import { NAV_ITEMS, NAV_HOME, NAV_APPOINTMENT, label } from '@/data/navigation';
 interface Props { open: boolean; onClose: () => void; }
 
 export default function SidebarMenu({ open, onClose }: Props) {
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   /* A drawer that lets the page scroll behind it feels broken on phones. */
@@ -110,6 +110,23 @@ export default function SidebarMenu({ open, onClose }: Props) {
         </div>
 
         <div className="ds-drawer-foot">
+          {/* Language lives here on mobile. It used to sit in the header, where
+              it had no room and overlapped the logo on a ~390px screen. */}
+          <div className="ds-drawer-lang">
+            <button
+              className={`ds-drawer-lang-btn${language === 'sq' ? ' is-active' : ''}`}
+              onClick={() => setLanguage('sq')}
+            >
+              Shqip
+            </button>
+            <button
+              className={`ds-drawer-lang-btn${language === 'en' ? ' is-active' : ''}`}
+              onClick={() => setLanguage('en')}
+            >
+              English
+            </button>
+          </div>
+
           <Link href={NAV_APPOINTMENT.href} onClick={onClose} className="ds-drawer-cta">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
               <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" />

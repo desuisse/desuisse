@@ -483,55 +483,106 @@ button, a {
 }
 .lang-btn, .footer-link { min-height: unset; min-width: unset; }
 
-/* Ring size slider (45–75 EU) */
-.ring-size-range {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
+/* ═══════════════════════════════════════════════════════════════════
+   RING SIZE SLIDER (45–75 EU)
+
+   The input is a transparent full-height strip so there is a real 44px
+   target to grab; the visible track is painted by the divs behind it.
+   Do not give the input a height of its own again — that was the bug that
+   made dragging feel like it kept letting go on touch devices.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ds-slider-wrap { width: 100%; user-select: none; -webkit-user-select: none; }
+
+.ds-slider { position: relative; height: 44px; }
+
+.ds-slider-badge {
+  position: absolute;
+  top: -6px;
+  transform: translateX(-50%);
+  background: var(--ds-dark);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.ds-slider-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, #1a0a0a var(--fill, 0%), #e8e0d4 var(--fill, 0%));
+  background: var(--ds-line);
+  overflow: hidden;
+  pointer-events: none;
+}
+.ds-slider-fill { height: 100%; background: var(--ds-dark); border-radius: 2px; }
+
+.ds-slider-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
   outline: none;
   cursor: pointer;
-  margin: 0;
-  /* Without this, mobile browsers can intercept the drag gesture for page
-     scroll instead of the slider, which is what made dragging feel broken/
-     jerky on touch devices. */
+  /* Without this, a mobile browser can claim the drag for page-scrolling
+     instead of passing it to the slider. */
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
 }
-.ring-size-range::-webkit-slider-thumb {
+
+/* Tracks are transparent — the painted one lives behind the input. Giving
+   them the input's full height is what centres the thumb vertically. */
+.ds-slider-input::-webkit-slider-runnable-track { height: 44px; background: transparent; border: none; }
+.ds-slider-input::-moz-range-track { height: 44px; background: transparent; border: none; }
+.ds-slider-input::-moz-range-progress { background: transparent; }
+
+.ds-slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #1a0a0a;
+  border: 2px solid var(--ds-dark);
+  box-shadow: 0 2px 6px rgba(26, 10, 10, 0.22);
   cursor: grab;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
-  margin-top: 0;
+  /* Centres a 28px thumb in a 44px track: (44 - 28) / 2 = 8 */
+  margin-top: 8px;
 }
-.ring-size-range::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.12); }
-.ring-size-range::-moz-range-thumb {
-  width: 26px;
-  height: 26px;
+.ds-slider-input::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #fff;
-  border: 2px solid #1a0a0a;
+  border: 2px solid var(--ds-dark);
+  box-shadow: 0 2px 6px rgba(26, 10, 10, 0.22);
   cursor: grab;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
 }
-.ring-size-range::-moz-range-thumb:active { cursor: grabbing; transform: scale(1.12); }
-.ring-size-range::-moz-range-track {
-  background: transparent;
-  height: 4px;
-  border: none;
-}
-.ring-size-range::-moz-range-progress {
-  background: #1a0a0a;
-  height: 4px;
-  border-radius: 2px;
+.ds-slider-input:active::-webkit-slider-thumb { cursor: grabbing; border-color: var(--ds-burgundy); }
+.ds-slider-input:active::-moz-range-thumb { cursor: grabbing; border-color: var(--ds-burgundy); }
+.ds-slider-input:focus-visible::-webkit-slider-thumb { border-color: var(--ds-burgundy); box-shadow: 0 0 0 4px rgba(107, 15, 26, 0.15); }
+
+.ds-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--ds-muted-soft);
 }
 
 /* ── Collection cards ── */
@@ -851,21 +902,25 @@ button, a {
 .desktop-only { display: flex; }
 
 @media (max-width: 1023px) {
-  /* Mobile drops back to a single row: hamburger | logo | icons. */
-  .ds-nav, .ds-mega, .ds-mega-scrim, .header-navrow, .desktop-only { display: none !important; }
+  /* Mobile drops back to a single row: hamburger | logo | icons.
+     The language switcher moves into the drawer — on a 390px screen it had
+     nowhere to go, and because the right-hand cell is justified to the end,
+     the overflow ran leftwards straight across the logo. */
+  .ds-nav, .ds-mega, .ds-mega-scrim, .header-navrow, .desktop-only,
+  .site-header .lang-switcher { display: none !important; }
   .mobile-only { display: flex; }
   .header-inner { padding: 0 16px; }
-  .header-main { height: 66px; }
-  .site-header.is-scrolled .header-main { height: 60px; }
+  .header-main { height: 70px; }
+  .site-header.is-scrolled .header-main { height: 62px; }
   .header-cell-right { gap: 2px; }
-  .header-logo-img { height: 40px; }
-  .site-header.is-scrolled .header-logo-img { height: 34px; }
+  .header-logo-img { height: 46px; }
+  .site-header.is-scrolled .header-logo-img { height: 38px; }
 }
 @media (max-width: 640px) {
   .header-inner { padding: 0 12px; }
-  .header-main { height: 62px; gap: 8px; }
-  .header-logo-img { height: 34px; }
-  .site-header.is-scrolled .header-logo-img { height: 30px; }
+  .header-main { height: 66px; gap: 6px; }
+  .header-logo-img { height: 42px; }
+  .site-header.is-scrolled .header-logo-img { height: 36px; }
   .header-cell-right { gap: 0; }
   .header-icon-btn { padding: 6px; }
   .header-icon-btn svg { width: 17px; height: 17px; }
@@ -874,8 +929,9 @@ button, a {
 }
 @media (max-width: 380px) {
   .header-inner { padding: 0 8px; }
-  .header-logo-img { height: 29px; }
+  .header-logo-img { height: 36px; }
   .header-icon-btn { padding: 5px; }
+  .header-icon-btn svg { width: 16px; height: 16px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1246,6 +1302,15 @@ button, a {
   min-width: unset;
 }
 
+/* Icon buttons keep a comfortable tap height but must be free to sit closer
+   together than 44px, or the mobile header row cannot fit its contents. */
+.header-icon-btn { min-width: 0; min-height: 40px; }
+
+/* Belt and braces: nothing in the header may spill across the wordmark. */
+.header-main { overflow: hidden; }
+.header-cell-right { flex-wrap: nowrap; }
+.header-logo-link { min-width: 0; }
+
 /* Between 1024 and 1200 the four left-hand nav labels start crowding the
    logo, so tighten the tracking and gaps before anything can collide. */
 @media (min-width: 1024px) and (max-width: 1200px) {
@@ -1261,5 +1326,27 @@ button, a {
 /* Pre-mount placeholder — same height as the real header at every breakpoint
    so the page doesn't jump when the language context finishes loading. */
 .header-placeholder { height: 155px; }
-@media (max-width: 1023px) { .header-placeholder { height: 66px; } }
-@media (max-width: 640px)  { .header-placeholder { height: 62px; } }
+@media (max-width: 1023px) { .header-placeholder { height: 70px; } }
+@media (max-width: 640px)  { .header-placeholder { height: 66px; } }
+
+/* Language switch inside the mobile drawer */
+.ds-drawer-lang { display: flex; gap: 8px; margin-bottom: 16px; }
+.ds-drawer-lang-btn {
+  flex: 1;
+  padding: 10px 8px;
+  background: none;
+  border: 1px solid var(--ds-line);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+  transition: all 0.2s ease;
+}
+.ds-drawer-lang-btn.is-active {
+  border-color: var(--ds-dark);
+  background: var(--ds-dark);
+  color: #fff;
+}

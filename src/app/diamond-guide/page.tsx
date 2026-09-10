@@ -44,12 +44,16 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 }
 
 /** Image with elegant fallback when file missing. */
-function PhotoSlot({ src, alt, aspect = '4/3' }: { src: string; alt: string; aspect?: string }) {
+function PhotoSlot({ src, alt, aspect = '4/3', fill = false }: { src: string; alt: string; aspect?: string; fill?: boolean }) {
   const [failed, setFailed] = useState(false);
   return (
     <div style={{
-      position: 'relative', width: '100%', aspectRatio: aspect,
       background: 'linear-gradient(135deg, #f7f3ee 0%, #ede4d4 100%)', overflow: 'hidden',
+      ...(fill
+        /* fill = stretch to the parent box and crop, for hero bands where the
+           container decides the height, not the photograph. */
+        ? { position: 'absolute' as const, inset: 0, width: '100%', height: '100%' }
+        : { position: 'relative' as const, width: '100%', aspectRatio: aspect }),
     }}>
       {!failed ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -185,8 +189,8 @@ export default function DiamondGuidePage() {
       <Header />
 
       {/* HERO */}
-      <div style={{ position: 'relative', minHeight: 380, background: '#1a0a0a', overflow: 'hidden' }}>
-        <PhotoSlot src="/images/diamond-hero.jpg" alt="" aspect="auto" />
+      <div style={{ position: 'relative', minHeight: 460, background: '#1a0a0a', overflow: 'hidden' }}>
+        <PhotoSlot src="/images/diamond-hero.jpg" alt="" fill />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(26,10,10,0.55) 0%, rgba(26,10,10,0.75) 100%)' }} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '40px 32px', color: '#fff' }}>
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, letterSpacing: '0.4em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 16 }}>{t.eyebrow}</p>
