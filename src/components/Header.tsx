@@ -1,26 +1,64 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useUser } from '@/lib/UserContext';
 import SearchOverlay from './SearchOverlay';
 import SidebarMenu from './SidebarMenu';
+import { NavTriggers, MegaPanel } from './MegaMenu';
+import { NAV_ITEMS } from '@/data/navigation';
 
+/**
+ * Two-row header on desktop, one row on mobile.
+ *
+ *   Desktop   row 1 →  [ Book an Appointment ]   [ LOGO ]   [ lang + icons ]
+ *             row 2 →              [ centred navigation ]
+ *   Mobile    row 1 →  [ hamburger ]  [ LOGO ]  [ icons ]
+ *
+ * Why two rows: with the logo squeezed between seven nav labels it had to
+ * stay small to fit, which is what made the header feel cramped. Giving the
+ * wordmark its own line lets it run at ~70px — the size a maison's name
+ * should be — and the nav below it is easier to scan than a row split around
+ * a logo. It costs vertical space, but the header already hides on scroll
+ * down, so that space is only spent when someone is at the top of the page.
+ *
+ * On scroll the whole thing condenses rather than disappearing abruptly.
+ */
 export default function Header() {
   const { t, language, setLanguage, mounted } = useLanguage();
   const { count: wishlistCount } = useWishlist();
   const { count: cartCount, setDrawerOpen } = useCart();
   const { currentUser, status } = useUser();
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+
   const lastScrollRef = useRef(0);
   const ticking = useRef(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* Hover needs a grace period or the menu snaps shut in the gap between a
+     label and the panel underneath it. */
+  const openMenu = useCallback((key: string) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpenKey(key);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpenKey(null), 140);
+  }, []);
+
+  const closeMenuNow = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpenKey(null);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,8 +67,8 @@ export default function Header() {
       requestAnimationFrame(() => {
         const y = window.scrollY;
         const prev = lastScrollRef.current;
-        setScrolled(y > 60);
-        if (y > 120 && y - prev > 8) setHidden(true);
+        setScrolled(y > 40);
+        if (y > 160 && y - prev > 8) setHidden(true);
         else if (prev - y > 8) setHidden(false);
         lastScrollRef.current = y;
         ticking.current = false;
@@ -40,38 +78,63 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  /* A dropdown left hanging while the header slides away looks broken. */
+  useEffect(() => {
+    if (hidden) closeMenuNow();
+  }, [hidden, closeMenuNow]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMenuNow(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, [closeMenuNow]);
+
   if (!mounted) {
-    return <header className="site-header" style={{ height: 73 }} />;
+    /* Height must match the real header at every breakpoint, or the page
+       jumps the moment the language context finishes mounting. */
+    return <header className="site-header header-placeholder" />;
   }
+
+  const activeItem = NAV_ITEMS.find(i => i.key === openKey) ?? null;
+  const sq = language === 'sq';
 
   return (
     <>
-      {/* NO announcement bar — removed */}
-
-      <header className="site-header" style={{
-        transform: hidden ? 'translateY(-110%)' : 'translateY(0)',
-        transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s',
-        boxShadow: scrolled ? '0 4px 24px rgba(26,10,10,0.1)' : '0 1px 8px rgba(26,10,10,0.06)',
-      }}>
+      <header
+        className={`site-header${scrolled ? ' is-scrolled' : ''}${openKey ? ' has-menu-open' : ''}`}
+        style={{ transform: hidden ? 'translateY(-110%)' : 'translateY(0)' }}
+      >
+        {/* ── ROW 1 — wordmark ── */}
         <div className="header-inner">
-          <div className="header-row">
+          <div className="header-main" onMouseEnter={closeMenu}>
 
-            {/* FAR LEFT: hamburger */}
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="header-icon-btn"
-              aria-label="Menu"
-              style={{ flexShrink: 0 }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="3" y1="12" x2="21" y2="12"/>
-                <line x1="3" y1="18" x2="21" y2="18"/>
-              </svg>
-            </button>
+            <div className="header-cell header-cell-left">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="header-icon-btn mobile-only"
+                aria-label="Menu"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
 
-            {/* LOGO — far left, right after hamburger */}
+              <Link href="/contact" className="header-appointment desktop-only">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+                  <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                {sq ? 'Rezervo një Takim' : 'Book an Appointment'}
+              </Link>
+            </div>
+
             <Link href="/" className="header-logo-link">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/desuisse-logo.png"
                 alt="deSuisse Luxury Jewellery"
@@ -79,119 +142,74 @@ export default function Header() {
               />
             </Link>
 
-            {/* SPACER — pushes right icons to the right */}
-            <div style={{ flex: 1, minWidth: 0 }} />
-
-            {/* RIGHT: language switcher + icons */}
-            <div className="header-right">
-              {/* Language switcher */}
+            <div className="header-cell header-cell-right">
               <div className="lang-switcher">
-                <button className={`lang-btn ${language === 'sq' ? 'active' : ''}`} onClick={() => setLanguage('sq')} title="Shqip">ALB</button>
+                <button className={`lang-btn ${sq ? 'active' : ''}`} onClick={() => setLanguage('sq')} title="Shqip">ALB</button>
                 <span className="lang-divider">|</span>
-                <button className={`lang-btn ${language === 'en' ? 'active' : ''}`} onClick={() => setLanguage('en')} title="English">EN</button>
+                <button className={`lang-btn ${!sq ? 'active' : ''}`} onClick={() => setLanguage('en')} title="English">EN</button>
               </div>
 
-              {/* Search */}
               <button onClick={() => setSearchOpen(true)} className="header-icon-btn" aria-label={t.nav.search}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                 </svg>
               </button>
 
-              {/* Favorites */}
-              <Link href="/favorites" className="header-icon-btn" style={{ position: 'relative', textDecoration: 'none', color: 'inherit' }} aria-label={t.nav.wishlist}>
+              <Link href="/favorites" className="header-icon-btn" aria-label={t.nav.wishlist}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
-                {wishlistCount > 0 && (
-                  <span style={{ position: 'absolute', top: -6, right: -7, background: '#c9a84c', color: '#1a0a0a', borderRadius: '50%', width: 15, height: 15, fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)' }}>
-                    {wishlistCount}
-                  </span>
-                )}
+                {wishlistCount > 0 && <span className="header-count header-count-gold">{wishlistCount}</span>}
               </Link>
 
-              {/* Account — links to dashboard if signed in, otherwise sign-in page */}
               <Link
                 href={status === 'signed-in' ? '/account/dashboard' : '/account'}
                 className="header-icon-btn"
-                style={{ position: 'relative', textDecoration: 'none', color: 'inherit' }}
-                aria-label={language === 'sq' ? 'Llogaria' : 'Account'}
-                title={status === 'signed-in' && currentUser ? currentUser.name : (language === 'sq' ? 'Hyni në llogarinë tuaj' : 'Sign in to your account')}
+                aria-label={sq ? 'Llogaria' : 'Account'}
+                title={status === 'signed-in' && currentUser ? currentUser.name : (sq ? 'Hyni në llogarinë tuaj' : 'Sign in to your account')}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-                {/* Tiny gold dot if signed in */}
-                {status === 'signed-in' && (
-                  <span style={{ position: 'absolute', top: -2, right: -3, background: '#c9a84c', borderRadius: '50%', width: 6, height: 6 }} />
-                )}
+                {status === 'signed-in' && <span className="header-dot" />}
               </Link>
 
-              {/* Cart */}
-              <button onClick={() => setDrawerOpen(true)} className="header-icon-btn" style={{ position: 'relative', color: 'inherit' }} aria-label={t.nav.cart}>
+              <button onClick={() => setDrawerOpen(true)} className="header-icon-btn" aria-label={t.nav.cart}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                  <line x1="3" y1="6" x2="21" y2="6"/>
-                  <path d="M16 10a4 4 0 0 1-8 0"/>
+                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 0 1-8 0" />
                 </svg>
-                {cartCount > 0 && (
-                  <span style={{ position: 'absolute', top: -6, right: -7, background: '#1a0a0a', color: '#fff', borderRadius: '50%', width: 15, height: 15, fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)' }}>
-                    {cartCount}
-                  </span>
-                )}
-                <span className="desktop-only" style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 500, marginLeft: 2 }}>
-                  {cartCount > 0 ? cartCount : '0'} — 0.00€
-                </span>
+                {cartCount > 0 && <span className="header-count header-count-dark">{cartCount}</span>}
               </button>
             </div>
 
           </div>
         </div>
+
+        {/* ── ROW 2 — navigation (desktop only) ── */}
+        <div className="header-navrow">
+          <NavTriggers
+            side="all"
+            openKey={openKey}
+            onOpen={openMenu}
+            onClose={closeMenu}
+            language={language}
+          />
+        </div>
+
+        {/* One shared dropdown surface for every menu */}
+        <div onMouseEnter={() => openKey && openMenu(openKey)}>
+          <MegaPanel item={activeItem} onClose={closeMenu} language={language} />
+        </div>
       </header>
+
+      {/* Dims the page behind an open menu so the eye stays in the nav */}
+      <div className={`ds-mega-scrim${openKey ? ' is-open' : ''}`} onMouseEnter={closeMenuNow} aria-hidden="true" />
 
       <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <SidebarMenu open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      <style>{`
-        .header-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
-        .header-row { display: flex; align-items: center; height: 72px; gap: 20px; }
-        .header-logo-link { display: flex; align-items: center; flex-shrink: 0; text-decoration: none; }
-        .header-logo-img { height: 44px; width: auto; display: block; }
-        .header-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-
-        .header-icon-btn {
-          background: none; border: none; cursor: pointer; padding: 8px;
-          display: flex; align-items: center; justify-content: center;
-          color: #1a0a0a; border-radius: 50%;
-          transition: background 0.2s, color 0.2s, transform 0.15s;
-          position: relative;
-          flex-shrink: 0;
-        }
-        .header-icon-btn:hover { background: #f7f3ee; color: #c9a84c; transform: scale(1.12); }
-        .header-icon-btn:active { transform: scale(0.95); }
-        @media (max-width: 768px) { .desktop-only { display: none !important; } }
-
-        /* Mobile: everything needs to shrink to fit narrow screens, or the row
-           overflows the viewport (this was the bug — icons pushed off-screen). */
-        @media (max-width: 640px) {
-          .header-inner { padding: 0 12px; }
-          .header-row { height: 60px; gap: 8px; }
-          .header-logo-img { height: 30px; }
-          .header-right { gap: 4px; }
-          .header-icon-btn { padding: 6px; }
-          .header-icon-btn svg { width: 17px; height: 17px; }
-          .lang-switcher { font-size: 9px; gap: 0; }
-          .lang-btn { padding: 4px 5px; }
-        }
-        @media (max-width: 380px) {
-          .header-inner { padding: 0 8px; }
-          .header-row { gap: 4px; }
-          .header-logo-img { height: 26px; }
-          .header-right { gap: 0px; }
-          .header-icon-btn { padding: 5px; }
-        }
-      `}</style>
     </>
   );
 }

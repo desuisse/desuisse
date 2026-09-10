@@ -1,165 +1,124 @@
 'use client';
-import { useState } from 'react';
+
+/**
+ * Mobile / tablet navigation drawer (<1024px).
+ *
+ * Reads the SAME src/data/navigation.ts the desktop mega menu reads, so a
+ * category added there appears in both menus. Previously this file held its
+ * own hard-coded copy of the nav, which is exactly how two menus drift apart.
+ */
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
+import { NAV_ITEMS, NAV_HOME, NAV_APPOINTMENT, label } from '@/data/navigation';
 
 interface Props { open: boolean; onClose: () => void; }
-type Section = 'rings' | 'jewellery' | 'desuisse' | null;
 
 export default function SidebarMenu({ open, onClose }: Props) {
   const { language } = useLanguage();
-  const [expanded, setExpanded] = useState<Section>(null);
-  const toggle = (s: Section) => setExpanded(prev => prev === s ? null : s);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
-  const t = {
-    home:          language === 'sq' ? 'Kryefaqja' : 'Home',
-    rings:         language === 'sq' ? 'deSuisse Unaza' : 'deSuisse Rings',
-    engagement:    language === 'sq' ? 'Unaza Fejese' : 'Engagement Rings',
-    wedding:       language === 'sq' ? 'Unaza Martese' : 'Wedding Rings',
-    engraving:     language === 'sq' ? 'Gravim Falas' : 'Free Engraving',
-    sizing:        language === 'sq' ? 'Madhësia dhe Shërbimi' : 'Sizing and Service',
-    ringCare:      language === 'sq' ? 'Kujdesi i Unazës' : 'Ring Care',
-    jewellery:     language === 'sq' ? 'deSuisse Bizhuteri' : 'deSuisse Jewellery',
-    allRings:      language === 'sq' ? 'Unaza' : 'Rings',
-    earrings:      language === 'sq' ? 'Vathë' : 'Earrings',
-    necklaces:     language === 'sq' ? 'Qafore' : 'Necklaces',
-    bracelets:     language === 'sq' ? 'Byzylykë' : 'Bracelets',
-    vouchers:      language === 'sq' ? 'Kuponë Dhuratë' : 'Gift Vouchers',
-    customDesign:  language === 'sq' ? 'Dizajn i Personalizuar' : 'Custom Design',
-    ringStory:     language === 'sq' ? 'Historia e Unazës' : 'The Story of the Ring',
-    faq:           language === 'sq' ? 'Pyetjet e Shpeshta' : 'FAQ',
-    aboutUs:       language === 'sq' ? 'Rreth Nesh' : 'About Us',
-    desuisse:      'deSuisse',
-    boutiques:     language === 'sq' ? 'Boutique-t' : 'Boutiques',
-    ourHistory:    language === 'sq' ? 'Historia Jonë' : 'Our History',
-    bookAppointment: language === 'sq' ? 'Rezervo një Takim' : 'Book Appointment',
-  };
+  /* A drawer that lets the page scroll behind it feels broken on phones. */
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 
-  const SectionHeader = ({ label, section }: { label: string; section: Section }) => (
-    <button onClick={() => toggle(section)} style={{
-      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '16px 0', background: 'none', border: 'none', cursor: 'pointer',
-      fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: expanded === section ? 700 : 500,
-      color: expanded === section ? '#1a0a0a' : '#333', letterSpacing: '0.06em',
-      textTransform: 'none',
-      borderBottom: expanded === section ? 'none' : '1px solid #f0ebe3',
-      transition: 'color 0.2s',
-    }}>
-      {label}
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-        style={{ transform: expanded === section ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
-        <path d="M9 18l6-6-6-6"/>
-      </svg>
-    </button>
-  );
-
-  const TopLink = ({ href, label, isNew }: { href: string; label: string; isNew?: boolean }) => (
-    <Link href={href} onClick={onClose} style={{
-      display: 'flex', alignItems: 'center', gap: 8, padding: '14px 0',
-      fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 500,
-      color: '#333', textDecoration: 'none', letterSpacing: '0.04em',
-      borderBottom: '1px solid #f0ebe3', transition: 'color 0.2s',
-    }}
-      onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#c9a84c'}
-      onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#333'}
-    >
-      {label}
-      {isNew && <span style={{ background: '#c9a84c', color: '#1a0a0a', fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', padding: '2px 6px', textTransform: 'uppercase' }}>NEW</span>}
-    </Link>
-  );
-
-  const SubItem = ({ href, label, isNew }: { href: string; label: string; isNew?: boolean }) => (
-    <Link href={href} onClick={onClose} style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      padding: '10px 0 10px 16px', fontFamily: 'var(--font-sans)', fontSize: 12,
-      color: '#666', textDecoration: 'none', letterSpacing: '0.03em', transition: 'color 0.2s',
-    }}
-      onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#c9a84c'}
-      onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#666'}
-    >
-      {label}
-      {isNew && <span style={{ background: '#c9a84c', color: '#1a0a0a', fontFamily: 'var(--font-sans)', fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', padding: '2px 5px', textTransform: 'uppercase' }}>NEW</span>}
-    </Link>
-  );
+  const toggle = (key: string) => setExpanded(prev => (prev === key ? null : key));
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,10,10,0.45)', zIndex: 199, backdropFilter: 'blur(2px)' }} />
+      <div className="ds-drawer-scrim" onClick={onClose} />
 
-      <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '100%', maxWidth: 360, background: '#fff', zIndex: 200, display: 'flex', flexDirection: 'column', boxShadow: '8px 0 40px rgba(26,10,10,0.12)', animation: 'slideInLeft 0.28s ease', overflowY: 'auto' }}>
+      <div className="ds-drawer" role="dialog" aria-modal="true" aria-label="Menu">
 
-        {/* Header */}
-        <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e8e0d4', flexShrink: 0 }}>
+        <div className="ds-drawer-head">
           <Link href="/" onClick={onClose}>
-            <img
-              src="/images/desuisse-logo.png"
-              alt="deSuisse Luxury Jewellery"
-              style={{ height: 38, width: 'auto', display: 'block' }}
-            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/desuisse-logo.png" alt="deSuisse Luxury Jewellery" style={{ height: 34, width: 'auto', display: 'block' }} />
           </Link>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: 6 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          <button onClick={onClose} className="ds-drawer-close" aria-label="Close menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
           </button>
         </div>
 
-        {/* Nav */}
-        <div style={{ padding: '4px 24px', flex: 1 }}>
+        <div className="ds-drawer-body">
+          <Link href={NAV_HOME.href} onClick={onClose} className="ds-drawer-top">
+            {label(NAV_HOME, language)}
+          </Link>
 
-          {/* Home */}
-          <TopLink href="/" label={t.home} />
+          {NAV_ITEMS.map(item => {
+            const hasChildren = Boolean(item.columns?.length);
+            const isOpen = expanded === item.key;
 
-          {/* deSuisse Rings */}
-          <SectionHeader label={t.rings} section="rings" />
-          {expanded === 'rings' && (
-            <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0ebe3' }}>
-              <SubItem href="/shop?category=engagement-rings" label={t.engagement} />
-              <SubItem href="/shop?category=wedding-rings" label={t.wedding} />
-              <SubItem href="/free-engraving" label={t.engraving} />
-              <SubItem href="/sizing-service" label={t.sizing} />
-              <SubItem href="/jewelry-care" label={t.ringCare} />
-            </div>
-          )}
+            /* Items with no sub-links are plain links, not dead accordions. */
+            if (!hasChildren) {
+              return (
+                <Link key={item.key} href={item.href} onClick={onClose} className="ds-drawer-top">
+                  {label(item, language)}
+                </Link>
+              );
+            }
 
-          {/* deSuisse Jewellery */}
-          <SectionHeader label={t.jewellery} section="jewellery" />
-          {expanded === 'jewellery' && (
-            <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0ebe3' }}>
-              <SubItem href="/shop?category=everyday-rings" label={t.allRings} />
-              <SubItem href="/shop?category=earrings" label={t.earrings} />
-              <SubItem href="/shop?category=necklaces" label={t.necklaces} />
-              <SubItem href="/shop?category=bracelets" label={t.bracelets} />
-              <SubItem href="/gift-vouchers" label={t.vouchers} isNew />
-            </div>
-          )}
+            return (
+              <div key={item.key}>
+                <button
+                  onClick={() => toggle(item.key)}
+                  className={`ds-drawer-section${isOpen ? ' is-open' : ''}`}
+                  aria-expanded={isOpen}
+                >
+                  {label(item, language)}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </button>
 
-          {/* Standalone links */}
-          <TopLink href="/custom-design" label={t.customDesign} />
-          <TopLink href="/ring-story" label={t.ringStory} />
-          <TopLink href="/reviews" label={language === 'sq' ? 'Vlerësime' : 'Reviews'} />
-          <TopLink href="/faq" label={t.faq} />
-
-          {/* deSuisse (About) */}
-          <SectionHeader label={t.desuisse} section="desuisse" />
-          {expanded === 'desuisse' && (
-            <div style={{ paddingBottom: 8, borderBottom: '1px solid #f0ebe3' }}>
-              <SubItem href="/boutiques" label={t.boutiques} />
-              <SubItem href="/about" label={t.ourHistory} />
-            </div>
-          )}
+                {isOpen && (
+                  <div className="ds-drawer-sub">
+                    {item.columns?.map((col, i) => (
+                      <div key={i}>
+                        {col.en && (
+                          <p className="ds-drawer-sub-heading">
+                            {language === 'sq' ? col.sq : col.en}
+                          </p>
+                        )}
+                        {col.links.map(link => (
+                          <Link key={link.href + link.en} href={link.href} onClick={onClose} className="ds-drawer-sub-link">
+                            {label(link, language)}
+                            {link.isNew && <span className="ds-badge">NEW</span>}
+                          </Link>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Book appointment CTA */}
-        <div style={{ padding: '20px 24px', borderTop: '1px solid #e8e0d4', flexShrink: 0 }}>
-          <Link href="/contact" onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#c9a84c', textDecoration: 'none', letterSpacing: '0.06em' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            {t.bookAppointment}
+        <div className="ds-drawer-foot">
+          <Link href={NAV_APPOINTMENT.href} onClick={onClose} className="ds-drawer-cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            {label(NAV_APPOINTMENT, language)}
           </Link>
         </div>
       </div>
-
-      <style>{`@keyframes slideInLeft { from { transform: translateX(-100%) } to { transform: translateX(0) } }`}</style>
     </>
   );
 }

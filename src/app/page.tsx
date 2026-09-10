@@ -360,8 +360,15 @@ export default function HomePage() {
             onError={() => {}}
           />
         </div>
-        {/* Dark overlay */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(26,10,10,0.55) 0%, rgba(26,10,10,0.3) 50%, rgba(26,10,10,0.65) 100%)' }} />
+        {/* Dark overlay.
+            Two layers on purpose: a vertical gradient for the top and bottom
+            edges, plus a soft radial pool behind the centred wordmark. With
+            the single 0.3 mid-stop the gold eyebrow text sat on whatever the
+            photo happened to be doing and often vanished — this guarantees a
+            readable ground for the text regardless of which hero image is
+            uploaded in the admin. */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(26,10,10,0.6) 0%, rgba(26,10,10,0.38) 45%, rgba(26,10,10,0.72) 100%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 55% at 50% 52%, rgba(26,10,10,0.5) 0%, rgba(26,10,10,0) 70%)' }} />
         {/* Fallback dark bg if image missing */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1a0a0a 0%, #3d1a1a 50%, #6b0f1a 100%)', zIndex: -1 }} />
         {/* Hero content */}

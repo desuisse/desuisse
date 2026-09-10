@@ -12,6 +12,7 @@ import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { fetchProducts, Product, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
+import FeatureCards, { FeatureItem } from '@/components/FeatureCards';
 import { sanitizeEngraving } from '@/lib/security';
 
 // ── Engraving section ────────────────────────────────────────
@@ -284,6 +285,54 @@ function DesuisseBox({ language }: { language: string }) {
     </div>
   );
 }
+
+/* ── Services + Education card rows ──────────────────────────────
+   Swap any `image` for your own photo in /public/images/ — a missing file
+   falls back to a placeholder rather than breaking the layout. Every href
+   points at a route that already exists; do not add one that doesn't. */
+const SERVICE_ITEMS: FeatureItem[] = [
+  {
+    image: '/images/boutique-1.jpg', href: '/boutiques',
+    en: 'Our Boutiques', sq: 'Boutique-t Tona',
+    noteEn: 'Karlovy Vary & Pejë', noteSq: 'Karlovy Vary dhe Pejë',
+  },
+  {
+    image: '/images/boutique-2.jpg', href: '/contact',
+    en: 'Appointments', sq: 'Takime',
+    noteEn: 'One-to-one, in person or online', noteSq: 'Personalisht ose online',
+  },
+  {
+    image: '/images/art1.jpg', href: '/custom-design',
+    en: 'Bespoke Rings', sq: 'Unaza të Personalizuara',
+    noteEn: 'Designed with you, made for you', noteSq: 'Dizajnuar bashkë me ju',
+  },
+  {
+    image: '/images/boutique-3.jpg', href: '/sizing-service',
+    en: 'Sizing & Service', sq: 'Madhësia dhe Shërbimi',
+    noteEn: 'Free resizing, for life', noteSq: 'Rregullim falas, përgjithmonë',
+  },
+];
+
+const EDUCATION_ITEMS: FeatureItem[] = [
+  {
+    image: '/images/chop4.jpg', href: '/diamond-guide',
+    en: 'Diamond Guidance', sq: 'Udhëzime për Diamantin',
+    noteEn: 'Natural, lab-grown and moissanite — what actually differs.',
+    noteSq: 'Natyror, laboratorik dhe moissanite — çfarë ndryshon vërtet.',
+  },
+  {
+    image: '/images/art3.webp', href: '/ring-sizer',
+    en: 'Find Your Ring Size', sq: 'Gjeni Madhësinë Tuaj',
+    noteEn: 'Measure at home in under a minute.',
+    noteSq: 'Matni në shtëpi për më pak se një minutë.',
+  },
+  {
+    image: '/images/art2.jpg', href: '/jewelry-care',
+    en: 'Caring for Your Piece', sq: 'Kujdesi për Pjesën Tuaj',
+    noteEn: 'Keep it looking like the day you collected it.',
+    noteSq: 'Mbajeni si ditën e parë.',
+  },
+];
 
 // ── Main product page ─────────────────────────────────────────
 export default function ProductPage() {
@@ -655,6 +704,29 @@ export default function ProductPage() {
       <div style={{ maxWidth: 1300, margin: '0 auto', padding: '0 40px 60px' }}>
         <DesuisseBox language={language} />
       </div>
+
+      {/* Our Services */}
+      <FeatureCards
+        language={language}
+        eyebrow="deSuisse"
+        title={language === 'sq' ? 'Shërbimet Tona' : 'Our Services'}
+        subtitle={language === 'sq'
+          ? 'Udhëzim personal për unazën tuaj — në boutique ose online, nga skica e parë deri te rregullimi i fundit.'
+          : 'Personal guidance for your ring — in the boutique or online, from the first sketch to the final adjustment.'}
+        items={SERVICE_ITEMS}
+      />
+
+      {/* Education */}
+      <FeatureCards
+        language={language}
+        background="#faf7f2"
+        eyebrow={language === 'sq' ? 'Njohuri' : 'Education'}
+        title={language === 'sq' ? 'Dini Përpara se të Zgjidhni' : 'Know Before You Choose'}
+        subtitle={language === 'sq'
+          ? 'Çdo gjë që ju duhet të dini për gurin, madhësinë dhe kujdesin — pa zhargon.'
+          : 'Everything worth knowing about the stone, the fit and the care — without the jargon.'}
+        items={EDUCATION_ITEMS}
+      />
 
       {/* Related products */}
       {related.length > 0 && (
