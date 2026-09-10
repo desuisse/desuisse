@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -467,6 +467,22 @@ export default function ProductPage() {
     marginBottom: 10, display: 'block',
   };
 
+  /* Memoised so that dragging the ring size slider — which fires a state
+     update per animation frame — does not re-render every related product
+     card alongside it. None of this depends on the selected size. */
+  const relatedGrid = useMemo(() => (
+    related.length > 0 ? (
+      <section style={{ background: '#f7f3ee', padding: '60px 40px', marginTop: 20 }}>
+        <div style={{ maxWidth: 1300, margin: '0 auto' }}>
+          <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 40 }}>{t.related}</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 24 }}>
+            {related.map(p => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </div>
+      </section>
+    ) : null
+  ), [related, t.related]);
+
   return (
     <>
       <Header />
@@ -517,7 +533,7 @@ export default function ProductPage() {
                     {product.materialVariants.map(v => (
                       <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ ...activeBtnStyle(selectedVariant === v.name), display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px' }}>
                         <span>{v.name}</span>
-                        <span style={{ fontSize: 10, opacity: 0.75 }}>{ringSizePriceApplies ? formatRingSizePrice(v, selectedSizeNum as number) : formatVariantPrice(v)}</span>
+                        <span style={{ fontSize: 10, opacity: 0.75, fontVariantNumeric: 'tabular-nums', minWidth: 78, textAlign: 'center' }}>{ringSizePriceApplies ? formatRingSizePrice(v, selectedSizeNum as number) : formatVariantPrice(v)}</span>
                       </button>
                     ))}
                   </div>
@@ -608,7 +624,7 @@ export default function ProductPage() {
           {/* Price row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', borderTop: '1px solid #f0ebe3', borderBottom: '1px solid #f0ebe3', marginBottom: 16, marginTop: product.hasCoupleOption ? 16 : 0 }}>
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999' }}>{t.price}</span>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, color: '#1a0a0a' }}>{displayPrice}</span>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 500, color: '#1a0a0a', fontVariantNumeric: 'tabular-nums' }}>{displayPrice}</span>
           </div>
           {isPriceRange && (
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999', marginTop: -10, marginBottom: 16, lineHeight: 1.6 }}>
@@ -729,16 +745,7 @@ export default function ProductPage() {
       />
 
       {/* Related products */}
-      {related.length > 0 && (
-        <section style={{ background: '#f7f3ee', padding: '60px 40px', marginTop: 20 }}>
-          <div style={{ maxWidth: 1300, margin: '0 auto' }}>
-            <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 40 }}>{t.related}</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 24 }}>
-              {related.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
-          </div>
-        </section>
-      )}
+      {relatedGrid}
 
       {/* Schedule a meeting modal */}
       {scheduleModal && (

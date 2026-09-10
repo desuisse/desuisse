@@ -14,7 +14,7 @@
  */
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 export interface FeatureItem {
   image: string;
@@ -46,7 +46,7 @@ function FeatureImage({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-export default function FeatureCards({
+function FeatureCards({
   eyebrow,
   title,
   subtitle,
@@ -99,3 +99,7 @@ export default function FeatureCards({
     </section>
   );
 }
+
+/* Memoised: its props are module-level constants plus `language`, so it has no
+   reason to re-render while someone drags the ring size slider. */
+export default memo(FeatureCards);

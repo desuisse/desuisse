@@ -1350,3 +1350,146 @@ button, a {
   background: var(--ds-dark);
   color: #fff;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAGE HERO — branded band for interior pages
+   ═══════════════════════════════════════════════════════════════════ */
+
+.ds-page-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 72px 40px 76px;
+  text-align: center;
+  background: linear-gradient(150deg, #1a0a0a 0%, #2c1013 46%, var(--ds-burgundy) 100%);
+  color: #fff;
+}
+
+/* A faint gold pinstripe, the way an engine-turned watch dial or a piece of
+   security printing carries texture without asking to be looked at. */
+.ds-page-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    58deg,
+    rgba(201, 168, 76, 0.09) 0px,
+    rgba(201, 168, 76, 0.09) 1px,
+    transparent 1px,
+    transparent 11px
+  );
+  opacity: 0.65;
+  pointer-events: none;
+}
+/* Pool of light behind the wordmark so the stripes never fight the type. */
+.ds-page-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 62% 78% at 50% 46%, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0) 72%);
+  pointer-events: none;
+}
+
+.ds-page-hero-inner { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }
+
+.ds-page-hero-logo {
+  height: 52px;
+  width: auto;
+  display: block;
+  margin: 0 auto 26px;
+  opacity: 0.95;
+}
+
+.ds-page-hero-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--ds-gold);
+  margin-bottom: 16px;
+}
+
+.ds-page-hero-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4.4vw, 3.1rem);
+  font-weight: 300;
+  letter-spacing: 0.03em;
+  line-height: 1.18;
+  color: #fff;
+}
+
+.ds-page-hero-rule { display: block; margin: 22px auto 0; color: var(--ds-gold); line-height: 0; }
+
+.ds-page-hero-sub {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: rgba(255, 255, 255, 0.72);
+  max-width: 560px;
+  margin: 22px auto 0;
+}
+
+/* Light variant — same structure, ivory ground */
+.ds-page-hero.is-light {
+  background: linear-gradient(150deg, var(--ds-ivory) 0%, var(--ds-sand) 100%);
+  color: var(--ds-dark);
+  border-bottom: 1px solid var(--ds-line);
+}
+.ds-page-hero.is-light::before { opacity: 0.5; }
+.ds-page-hero.is-light::after {
+  background: radial-gradient(ellipse 62% 78% at 50% 46%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 72%);
+}
+.ds-page-hero.is-light .ds-page-hero-logo { opacity: 1; }
+.ds-page-hero.is-light .ds-page-hero-title { color: var(--ds-dark); }
+.ds-page-hero.is-light .ds-page-hero-sub { color: var(--ds-muted); }
+.ds-page-hero.is-light .ds-page-hero-eyebrow { color: var(--ds-burgundy); }
+
+@media (max-width: 640px) {
+  .ds-page-hero { padding: 52px 24px 56px; }
+  .ds-page-hero-logo { height: 40px; margin-bottom: 20px; }
+  .ds-page-hero-eyebrow { letter-spacing: 0.3em; }
+}
+
+/* Diamond guide — drawn origin panels (natural vs lab) */
+.dg-origin {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(150deg, #1f0d0f 0%, #2e1114 55%, var(--ds-burgundy) 100%);
+  color: var(--ds-gold);
+}
+.dg-origin.is-lab {
+  background: linear-gradient(150deg, var(--ds-cream) 0%, var(--ds-sand) 100%);
+  color: #a08236;
+  border: 1px solid var(--ds-line);
+}
+.dg-origin::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(58deg, currentColor 0px, currentColor 1px, transparent 1px, transparent 13px);
+  opacity: 0.1;
+  pointer-events: none;
+}
+.dg-origin-art { position: relative; width: 100%; flex: 1; min-height: 0; display: block; }
+.dg-origin-meta { position: relative; padding: 0 22px 20px; text-align: center; }
+.dg-origin-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ds-gold);
+  margin-bottom: 6px;
+}
+.dg-origin.is-lab .dg-origin-label { color: var(--ds-burgundy); }
+.dg-origin-caption {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+}
+.dg-origin.is-lab .dg-origin-caption { color: var(--ds-muted); }

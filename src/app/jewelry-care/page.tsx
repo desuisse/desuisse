@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Header from '@/components/Header';
+import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -163,14 +164,11 @@ export default function JewelryCare() {
     <>
       <Header />
 
-      {/* Dark hero header */}
-      <div style={{ background: '#1a0a0a', padding: '64px 40px', textAlign: 'center' }}>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 14 }}>◆ deSuisse</p>
-        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.2rem, 4vw, 3.2rem)', fontWeight: 300, color: '#fff', letterSpacing: '0.06em', marginBottom: 16 }}>
-          {d.title}
-        </h1>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#888', maxWidth: 540, margin: '0 auto', lineHeight: 1.9 }}>{d.intro}</p>
-      </div>
+      <PageHero
+        eyebrow={language === 'sq' ? 'Kujdesi' : 'Care'}
+        title={d.title}
+        subtitle={d.intro}
+      />
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
         {d.sections.map((section, si) => (

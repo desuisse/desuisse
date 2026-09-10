@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Header from '@/components/Header';
+import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 
@@ -64,11 +65,14 @@ export default function RingSizerPage() {
     <>
       <Header />
 
-      <div style={{ background: '#f7f3ee', padding: '60px 40px', textAlign: 'center', borderBottom: '1px solid #e8e0d4' }}>
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, letterSpacing: '0.35em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 14 }}>◆ deSuisse</p>
-        <h1 className="section-title">{t.title}</h1>
-        <div style={{ width: 40, height: 1, background: '#c9a84c', margin: '18px auto 0' }} />
-      </div>
+      <PageHero
+        tone="light"
+        eyebrow={language === 'sq' ? 'Udhëzues' : 'Guide'}
+        title={t.title}
+        subtitle={language === 'sq'
+          ? 'Tre mënyra për ta matur në shtëpi, dhe tabela e plotë e madhësive EU 45–75. Nëse e gaboni, rregullimi është falas.'
+          : 'Three ways to measure at home, plus the full EU 45–75 conversion table. If you get it wrong, resizing is free.'}
+      />
 
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '80px 40px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'start' }} className="ringsizer-grid">

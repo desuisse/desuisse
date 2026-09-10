@@ -8,6 +8,7 @@ import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OP
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 import { sanitizeText, sanitizeUrl, sanitizeNumber, isValidProduct, LIMITS } from '@/lib/security';
 import CloudinaryUploader from '@/components/CloudinaryUploader';
+import PasswordInput from '@/components/PasswordInput';
 
 // Password is now verified SERVER-SIDE via /api/admin-login
 // NEXT_PUBLIC_ADMIN_PASSWORD is no longer used — kept only as fallback for dev
@@ -516,8 +517,7 @@ export default function AdminPage() {
             </div>
           ) : (
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <input
-                type="password"
+              <PasswordInput
                 placeholder={t.admin.password}
                 className="ds-input"
                 value={password}
@@ -526,6 +526,8 @@ export default function AdminPage() {
                 autoFocus
                 autoComplete="current-password"
                 disabled={isLocked}
+                showLabel={language === 'sq' ? 'Shfaq fjalëkalimin' : 'Show password'}
+                hideLabel={language === 'sq' ? 'Fshih fjalëkalimin' : 'Hide password'}
               />
               {loginError && (
                 <p style={{ color: '#c0392b', fontFamily: 'var(--font-sans)', fontSize: 12 }}>{loginError}</p>

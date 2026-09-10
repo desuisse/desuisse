@@ -73,6 +73,60 @@ function PhotoSlot({ src, alt, aspect = '4/3', fill = false }: { src: string; al
   );
 }
 
+/** Drawn origin panel — used where a photograph would have to lie. */
+function OriginPanel({ variant, label, caption }: { variant: 'earth' | 'lab'; label: string; caption: string }) {
+  const earth = variant === 'earth';
+  return (
+    <div className={`dg-origin${earth ? '' : ' is-lab'}`}>
+      <svg viewBox="0 0 300 225" className="dg-origin-art" role="img" aria-label={label}>
+        <defs>
+          <linearGradient id={`dgFacet-${variant}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#cfe0ea" stopOpacity="0.7" />
+          </linearGradient>
+        </defs>
+
+        {earth ? (
+          /* Strata: the stone formed under pressure, deep down */
+          <g stroke="currentColor" fill="none" strokeWidth="1">
+            <path d="M0 150c46-16 92-16 138 0s92 16 162 0" opacity="0.55" />
+            <path d="M0 170c46-16 92-16 138 0s92 16 162 0" opacity="0.4" />
+            <path d="M0 190c46-16 92-16 138 0s92 16 162 0" opacity="0.28" />
+            <path d="M0 210c46-16 92-16 138 0s92 16 162 0" opacity="0.18" />
+          </g>
+        ) : (
+          /* Lattice: the same crystal, grown in ordered conditions */
+          <g stroke="currentColor" fill="none" strokeWidth="0.9" opacity="0.4">
+            {[0, 1, 2, 3].map(i => (
+              <polygon
+                key={i}
+                points="150,52 214,89 214,163 150,200 86,163 86,89"
+                transform={`translate(150 126) scale(${0.4 + i * 0.22}) translate(-150 -126)`}
+                opacity={0.85 - i * 0.18}
+              />
+            ))}
+            <path d="M150 26v40M150 186v40M40 76l38 22M222 128l38 22M260 76l-38 22M78 128l-38 22" opacity="0.5" />
+          </g>
+        )}
+
+        {/* The stone itself — a brilliant cut, same in both panels on purpose */}
+        <g transform="translate(150 104)">
+          <path d="M-34-20h68l-34 46z" fill={`url(#dgFacet-${variant})`} />
+          <path d="M-34-20 -20-34h40l14 14z" fill={`url(#dgFacet-${variant})`} opacity="0.82" />
+          <g stroke="#1a0a0a" strokeOpacity="0.28" strokeWidth="0.8" fill="none">
+            <path d="M-34-20h68l-34 46zM-34-20 -20-34h40l14 14zM-20-34 -10-20M20-34 10-20M-34-20h68M-10-20 0 26M10-20 0 26" />
+          </g>
+        </g>
+      </svg>
+
+      <div className="dg-origin-meta">
+        <p className="dg-origin-label">{label}</p>
+        <p className="dg-origin-caption">{caption}</p>
+      </div>
+    </div>
+  );
+}
+
 function ProsCons({ heading, items, color, bullet }: { heading: string; items: string[]; color: string; bullet: string }) {
   return (
     <div>
@@ -208,7 +262,7 @@ export default function DiamondGuidePage() {
               <h2 style={h2Style}>{t.introHeading}</h2>
               <p style={pStyle}>{t.introBody}</p>
             </div>
-            <PhotoSlot src="/images/diamond-comparison.jpg" alt="Diamond comparison" aspect="4/3" />
+            <PhotoSlot src="/images/diamond-loupe.jpg" alt="A diamond examined through a loupe" aspect="4/3" />
           </div>
         </Reveal>
       </section>
@@ -220,7 +274,11 @@ export default function DiamondGuidePage() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <Reveal>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }} className="dg-two-col">
-              <PhotoSlot src="/images/diamond-natural.jpg" alt="Natural diamond" aspect="4/3" />
+              <OriginPanel
+                variant="earth"
+                label={sq ? 'Formuar në tokë' : 'Formed in the earth'}
+                caption={sq ? 'Miliarda vjet nën presion dhe nxehtësi' : 'Billions of years under heat and pressure'}
+              />
               <div>
                 <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, letterSpacing: '0.3em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 12 }}>◆ {sq ? 'Origjina: Toka' : 'Origin: Earth'}</p>
                 <h2 style={h2Style}>{t.naturalHeading}</h2>
@@ -249,13 +307,45 @@ export default function DiamondGuidePage() {
                 <p style={pStyle}>{t.labBody1}</p>
                 <p style={pStyle}>{t.labBody2}</p>
               </div>
-              <PhotoSlot src="/images/diamond-lab.jpg" alt="Lab-grown diamond" aspect="4/3" />
+              <OriginPanel
+                variant="lab"
+                label={sq ? 'Rritur në laborator' : 'Grown in a laboratory'}
+                caption={sq ? 'I njëjti kristal karboni, javë në vend të epokave' : 'The same carbon crystal, weeks instead of eras'}
+              />
             </div>
           </Reveal>
           <Reveal delay={100}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginTop: 48 }} className="dg-two-col">
               <ProsCons heading={sq ? 'Avantazhet' : 'Strengths'}            items={t.labPros} color="#1a0a0a" bullet="◆" />
               <ProsCons heading={sq ? 'Të mbani parasysh' : 'Things to consider'} items={t.labCons} color="#888"    bullet="–" />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* SHAPES */}
+      <section style={{ ...sectionStyle, background: '#f7f3ee' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <Reveal>
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, letterSpacing: '0.35em', color: '#c9a84c', textTransform: 'uppercase', marginBottom: 14 }}>◆ {sq ? 'Format' : 'Shapes'}</p>
+              <h2 style={h2Style}>{sq ? 'Nëntë Prerjet' : 'The Nine Cuts'}</h2>
+              <p style={{ ...pStyle, maxWidth: 620, margin: '16px auto 0' }}>
+                {sq
+                  ? 'Prerja vendos se si guri e kthen dritën. Rrumbullaku shkëlqen më shumë; smeraldi jep hije të qeta dhe të gjera. Asnjëra nuk është më e mirë — thjesht janë të ndryshme.'
+                  : 'The cut decides how a stone returns light. A round brilliant sparkles hardest; an emerald cut trades that for broad, calm flashes. Neither is better — they are different temperaments.'}
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={100}>
+            <div style={{ maxWidth: 560, margin: '0 auto' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/diamond-shapes.jpg"
+                alt={sq ? 'Format e diamantit deSuisse' : 'deSuisse diamond shapes'}
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+                loading="lazy"
+              />
             </div>
           </Reveal>
         </div>
