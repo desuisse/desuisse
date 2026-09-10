@@ -91,7 +91,7 @@ export default function SearchOverlay({ open, onClose }: Props) {
             placeholder={placeholder}
             style={{
               flex: 1, border: 'none', outline: 'none',
-              fontFamily: 'Cormorant Garamond', fontSize: '1.6rem',
+              fontFamily: 'var(--font-serif)', fontSize: '1.6rem',
               fontWeight: 400, color: '#1a0a0a', background: 'transparent',
               letterSpacing: '0.02em',
             }}
@@ -107,12 +107,12 @@ export default function SearchOverlay({ open, onClose }: Props) {
           {/* Suggestions when empty */}
           {!query && (
             <div style={{ marginTop: 28 }}>
-              <p style={{ fontFamily: 'Montserrat', fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#bbb', marginBottom: 14 }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#bbb', marginBottom: 14 }}>
                 {language === 'sq' ? 'Sugjerimet' : 'Suggestions'}
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                 {suggestions.map(s => (
-                  <button key={s} onClick={() => setQuery(s)} style={{ padding: '8px 18px', border: '1px solid #e8e0d4', background: '#faf8f5', fontFamily: 'Montserrat', fontSize: 12, color: '#666', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.05em' }}
+                  <button key={s} onClick={() => setQuery(s)} style={{ padding: '8px 18px', border: '1px solid #e8e0d4', background: '#faf8f5', fontFamily: 'var(--font-sans)', fontSize: 12, color: '#666', cursor: 'pointer', transition: 'all 0.2s', letterSpacing: '0.05em' }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#c9a84c'; (e.currentTarget as HTMLButtonElement).style.color = '#c9a84c'; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#e8e0d4'; (e.currentTarget as HTMLButtonElement).style.color = '#666'; }}
                   >
@@ -125,12 +125,12 @@ export default function SearchOverlay({ open, onClose }: Props) {
 
           {/* Results */}
           {query && results.length === 0 && (
-            <p style={{ fontFamily: 'Montserrat', fontSize: 13, color: '#999', marginTop: 32, textAlign: 'center' }}>{noResults}</p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#999', marginTop: 32, textAlign: 'center' }}>{noResults}</p>
           )}
 
           {results.length > 0 && (
             <div style={{ marginTop: 28 }}>
-              <p style={{ fontFamily: 'Montserrat', fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#bbb', marginBottom: 16 }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#bbb', marginBottom: 16 }}>
                 {results.length} {language === 'sq' ? 'produkte' : 'results'}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -143,10 +143,10 @@ export default function SearchOverlay({ open, onClose }: Props) {
                       <Image src={p.image} alt={p.name} width={56} height={56} style={{ width: '100%', height: '100%', objectFit: 'cover' }} unoptimized />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.15rem', fontWeight: 500, color: '#1a0a0a', marginBottom: 3 }}>{p.name}</p>
-                      <p style={{ fontFamily: 'Montserrat', fontSize: 11, color: '#999', textTransform: 'capitalize', letterSpacing: '0.05em' }}>{p.category}</p>
+                      <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', fontWeight: 500, color: '#1a0a0a', marginBottom: 3 }}>{p.name}</p>
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999', textTransform: 'capitalize', letterSpacing: '0.05em' }}>{p.category}</p>
                     </div>
-                    <p style={{ fontFamily: 'Montserrat', fontSize: 13, color: '#666', flexShrink: 0 }}>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#666', flexShrink: 0 }}>
                       {p.price.toLocaleString('de-DE')}€{p.priceMax ? ` – ${p.priceMax.toLocaleString('de-DE')}€` : ''}
                     </p>
                   </Link>

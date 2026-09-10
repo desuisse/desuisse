@@ -8,6 +8,21 @@ import { Product, formatPrice } from '@/data/products';
 import { useLanguage } from '@/lib/LanguageContext';
 import QuickView from './QuickView';
 
+/**
+ * Product card.
+ *
+ * The old hover was a dark gradient rising from the bottom of the photo with
+ * three identical white circles floating on it. Two problems: these pieces are
+ * shot on cream, so a 70%-black gradient over them reads as dirty grey rather
+ * than depth; and three same-sized circles state that the three actions matter
+ * equally, when only one of them does.
+ *
+ * Now: the photo lifts slightly under a warm veil, a hairline frame draws in,
+ * the wishlist sits quietly in the corner, and one primary action — Quick View —
+ * slides up as a full-width bar. The old third button ("Buy Now") only pushed
+ * you to the product page, which is what clicking the card already does, so it
+ * is gone rather than duplicated.
+ */
 export default function ProductCard({ product }: { product: Product }) {
   const { language } = useLanguage();
   const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
@@ -18,125 +33,67 @@ export default function ProductCard({ product }: { product: Product }) {
   const toggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    wishlisted ? removeFromWishlist(product.id) : addToWishlist(product);
+    if (wishlisted) removeFromWishlist(product.id);
+    else addToWishlist(product);
   };
 
   const labels = {
-    favorite: language === 'sq' ? 'Të preferuarat' : 'Favorite',
-    quickView: language === 'sq' ? 'Shiko Shpejt' : 'Quick View',
-    checkout: language === 'sq' ? 'Blej Tani' : 'Buy Now',
+    favorite: language === 'sq' ? 'Të preferuarat' : 'Add to favourites',
+    quickView: language === 'sq' ? 'Shikim i Shpejtë' : 'Quick View',
   };
+
+  const open = () => router.push(`/product/${product.id}`);
 
   return (
     <>
       <div className="product-card">
-        {/* Image area — click navigates to product page */}
-        <div className="product-img-wrap" onClick={() => router.push(`/product/${product.id}`)} style={{ cursor: 'pointer' }}>
+        <div className="product-img-wrap" onClick={open} role="link" tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter') open(); }}>
+
           <Image src={product.image} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
           {product.image2 && (
             <Image src={product.image2} alt={`${product.name} alternate`} fill className="product-img-2" style={{ objectFit: 'cover' }} unoptimized />
           )}
 
-          {/* 3-button hover overlay — stop propagation so clicks don't go to product page */}
-          <div className="card-hover-overlay" onClick={e => e.stopPropagation()}>
-            {/* Favorite */}
-            <button
-              className="card-action-btn"
-              onClick={toggleWishlist}
-              title={labels.favorite}
-              style={{ background: wishlisted ? '#c9a84c' : '#fff', color: wishlisted ? '#1a0a0a' : '#1a0a0a' }}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill={wishlisted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            </button>
+          {/* Warm veil + hairline frame — depth without dirtying the photo */}
+          <span className="pc-veil" aria-hidden="true" />
+          <span className="pc-frame" aria-hidden="true" />
 
-            {/* Quick View — center */}
-            <button
-              className="card-action-btn card-action-main"
-              onClick={() => setQuickViewOpen(true)}
-              title={labels.quickView}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
+          <button
+            className={`pc-fav${wishlisted ? ' is-on' : ''}`}
+            onClick={toggleWishlist}
+            aria-label={labels.favorite}
+            aria-pressed={wishlisted}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill={wishlisted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
 
-            {/* Buy Now / Checkout */}
-            <button
-              className="card-action-btn"
-              onClick={() => router.push(`/product/${product.id}`)}
-              title={labels.checkout}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-            </button>
-          </div>
+          <button
+            className="pc-quick"
+            onClick={e => { e.stopPropagation(); setQuickViewOpen(true); }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            {labels.quickView}
+          </button>
         </div>
 
-        <div style={{ padding: '16px 4px 4px' }}>
-          <h3
-            onClick={() => router.push(`/product/${product.id}`)}
-            style={{ fontFamily: 'Cormorant Garamond', fontSize: '1.2rem', fontWeight: 500, color: '#1a0a0a', marginBottom: 6, cursor: 'pointer' }}
-          >
-            {product.name}
-          </h3>
+        <div className="pc-body">
+          <h3 className="pc-name" onClick={open}>{product.name}</h3>
           {product.description && (
-            <p style={{ fontFamily: 'Montserrat', fontSize: 12, color: '#999', marginBottom: 8, lineHeight: 1.6 }}>
+            <p className="pc-desc">
               {language === 'sq' && product.descriptionSq ? product.descriptionSq : product.description}
             </p>
           )}
-          <p style={{ fontFamily: 'Montserrat', fontSize: 13, color: '#666' }}>{formatPrice(product)}</p>
+          <p className="pc-price">{formatPrice(product)}</p>
         </div>
       </div>
 
       {quickViewOpen && <QuickView product={product} onClose={() => setQuickViewOpen(false)} />}
-
-      <style>{`
-        .card-hover-overlay {
-          position: absolute;
-          bottom: 0; left: 0; right: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 16px;
-          background: linear-gradient(to top, rgba(26,10,10,0.7) 0%, transparent 100%);
-          opacity: 0;
-          transform: translateY(8px);
-          transition: opacity 0.3s ease, transform 0.3s ease;
-          pointer-events: none;
-        }
-        .product-card:hover .card-hover-overlay {
-          opacity: 1;
-          transform: translateY(0);
-          pointer-events: all;
-        }
-        .card-action-btn {
-          width: 38px; height: 38px;
-          border-radius: 50%;
-          border: none;
-          background: #fff;
-          color: #1a0a0a;
-          display: flex; align-items: center; justify-content: center;
-          cursor: pointer;
-          transition: background 0.2s, transform 0.15s, color 0.2s;
-          box-shadow: 0 2px 12px rgba(26,10,10,0.18);
-          flex-shrink: 0;
-        }
-        .card-action-btn:hover {
-          background: #c9a84c;
-          color: #1a0a0a;
-          transform: scale(1.12);
-        }
-        .card-action-main {
-          width: 44px; height: 44px;
-        }
-      `}</style>
     </>
   );
 }

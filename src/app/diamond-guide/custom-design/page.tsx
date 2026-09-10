@@ -52,14 +52,14 @@ export default function CustomDesignPage() {
       {/* Hero */}
       <div style={{ background: '#1a0a0a', padding: '80px 40px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'repeating-linear-gradient(45deg, #c9a84c 0, #c9a84c 1px, transparent 0, transparent 50%)', backgroundSize: '12px 12px' }} />
-        <p style={{ fontFamily: 'Montserrat', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 20, position: 'relative' }}>✦ DeSuisse</p>
-        <h1 style={{ fontFamily: 'Cormorant Garamond', fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 300, color: '#fff', letterSpacing: '0.06em', marginBottom: 24, position: 'relative', lineHeight: 1.2 }}>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 20, position: 'relative' }}>✦ DeSuisse</p>
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 300, color: '#fff', letterSpacing: '0.06em', marginBottom: 24, position: 'relative', lineHeight: 1.2 }}>
           {t.hero}
         </h1>
-        <p style={{ fontFamily: 'Montserrat', fontSize: 14, color: '#aaa', maxWidth: 640, margin: '0 auto 36px', lineHeight: 1.9, position: 'relative' }}>
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#aaa', maxWidth: 640, margin: '0 auto 36px', lineHeight: 1.9, position: 'relative' }}>
           {t.intro}
         </p>
-        <Link href="/contact" style={{ display: 'inline-block', padding: '14px 36px', border: '1px solid #c9a84c', color: '#c9a84c', fontFamily: 'Montserrat', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', textDecoration: 'none', transition: 'all 0.2s', position: 'relative' }}
+        <Link href="/contact" style={{ display: 'inline-block', padding: '14px 36px', border: '1px solid #c9a84c', color: '#c9a84c', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', textDecoration: 'none', transition: 'all 0.2s', position: 'relative' }}
           onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = '#c9a84c'; (e.currentTarget as HTMLAnchorElement).style.color = '#1a0a0a'; }}
           onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'; (e.currentTarget as HTMLAnchorElement).style.color = '#c9a84c'; }}
         >
@@ -72,7 +72,7 @@ export default function CustomDesignPage() {
         <div style={{ maxWidth: 1300, margin: '60px auto 0', padding: '0 40px' }}>
           <div style={{ background: '#f7f3ee', border: '1px dashed #e8e0d4', aspectRatio: '16/6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <p style={{ fontFamily: 'Montserrat', fontSize: 11, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Hero Photo — public/images/custom-hero.jpg</p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Hero Photo — public/images/custom-hero.jpg</p>
           </div>
         </div>
       </Reveal>
@@ -82,8 +82,8 @@ export default function CustomDesignPage() {
         <section style={{ maxWidth: 900, margin: '80px auto', padding: '0 40px', textAlign: 'center' }}>
           <h2 className="section-title" style={{ marginBottom: 24 }}>{t.howTitle}</h2>
           <div style={{ width: 40, height: 1, background: '#c9a84c', margin: '0 auto 28px' }} />
-          <p style={{ fontFamily: 'Montserrat', fontSize: 14, color: '#666', lineHeight: 2, marginBottom: 36 }}>{t.how}</p>
-          <Link href="/contact" style={{ display: 'inline-block', padding: '14px 36px', background: '#1a0a0a', color: '#fff', fontFamily: 'Montserrat', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', textDecoration: 'none', transition: 'background 0.2s' }}
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#666', lineHeight: 2, marginBottom: 36 }}>{t.how}</p>
+          <Link href="/contact" style={{ display: 'inline-block', padding: '14px 36px', background: '#1a0a0a', color: '#fff', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', textDecoration: 'none', transition: 'background 0.2s' }}
             onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.background = '#c9a84c'}
             onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.background = '#1a0a0a'}
           >
@@ -104,7 +104,7 @@ export default function CustomDesignPage() {
               <Reveal key={photo.id} delay={photo.id * 50}>
                 <div style={{ aspectRatio: '1', background: '#e8e0d4', border: '1px dashed #d4c9bc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden', position: 'relative' }}>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <p style={{ fontFamily: 'Montserrat', fontSize: 9, color: '#ccc', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', padding: '0 8px' }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#ccc', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', padding: '0 8px' }}>
                     {t.photoNote}<br/>public/images/{photo.file}
                   </p>
                 </div>

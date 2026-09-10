@@ -76,7 +76,7 @@ export default function ContactPage() {
           {/* Contact Form */}
           <div>
             <h2 style={{
-              fontFamily: 'Cormorant Garamond',
+              fontFamily: 'var(--font-serif)',
               fontSize: '1.8rem',
               fontWeight: 400,
               color: '#1a0a0a',
@@ -129,7 +129,7 @@ export default function ContactPage() {
                 required
               />
               {formError && (
-                <p style={{ fontFamily: 'Montserrat', fontSize: 12, color: '#c0392b' }}>{formError}</p>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#c0392b' }}>{formError}</p>
               )}
               <button type="submit" className="btn-dark" style={{ alignSelf: 'flex-start' }}>
                 {t.contact.send}
@@ -140,7 +140,7 @@ export default function ContactPage() {
           {/* Contact Info */}
           <div>
             <h2 style={{
-              fontFamily: 'Cormorant Garamond',
+              fontFamily: 'var(--font-serif)',
               fontSize: '1.8rem',
               fontWeight: 400,
               color: '#1a0a0a',
@@ -158,11 +158,11 @@ export default function ContactPage() {
                   </svg>
                 </div>
                 <div>
-                  <p style={{ fontFamily: 'Montserrat', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 4 }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 4 }}>
                     {t.contact.phoneLabel}
                   </p>
-                  <p style={{ fontFamily: 'Montserrat', fontSize: 14, color: '#1a0a0a' }}>987-654-3210</p>
-                  <p style={{ fontFamily: 'Montserrat', fontSize: 14, color: '#1a0a0a' }}>info@desuisse.com</p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#1a0a0a' }}>987-654-3210</p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#1a0a0a' }}>info@desuisse.com</p>
                 </div>
               </div>
 
@@ -174,16 +174,16 @@ export default function ContactPage() {
                   </svg>
                 </div>
                 <div>
-                  <p style={{ fontFamily: 'Montserrat', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 4 }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 4 }}>
                     {t.contact.addressLabel}
                   </p>
-                  <p style={{ fontFamily: 'Montserrat', fontSize: 14, color: '#1a0a0a' }}>Eliot Engjell, 55</p>
-                  <p style={{ fontFamily: 'Montserrat', fontSize: 14, color: '#1a0a0a' }}>Pejë 30000</p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#1a0a0a' }}>Eliot Engjell, 55</p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#1a0a0a' }}>Pejë 30000</p>
                   <a
                     href="https://maps.app.goo.gl/fN3hvrF5KonRYa966"
                     target="_blank"
                     rel="noreferrer"
-                    style={{ fontFamily: 'Montserrat', fontSize: 12, color: '#c9a84c', marginTop: 4, display: 'inline-block' }}
+                    style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#c9a84c', marginTop: 4, display: 'inline-block' }}
                   >
                     View on map →
                   </a>
@@ -193,7 +193,7 @@ export default function ContactPage() {
 
             {/* FAQ */}
             <h3 style={{
-              fontFamily: 'Cormorant Garamond',
+              fontFamily: 'var(--font-serif)',
               fontSize: '1.5rem',
               fontWeight: 400,
               marginBottom: 20,

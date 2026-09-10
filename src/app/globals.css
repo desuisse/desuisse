@@ -218,61 +218,162 @@ h1, h2, h3, h4, h5 {
   background: rgba(26, 10, 10, 0.12);
 }
 
-/* Product card */
-.product-card {
-  position: relative;
-  background: #fff;
-}
+/* ═══════════════════════════════════════════════════════════════════
+   PRODUCT CARD
+
+   These pieces are photographed on cream, so the previous dark gradient
+   over the lower half of the image read as dirty grey rather than depth.
+   The hover is now a warm veil, a hairline frame drawing inward, and ONE
+   primary action as a full-width bar — hierarchy instead of three equal
+   circles floating in a smudge.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.product-card { position: relative; background: transparent; }
 
 .product-card .product-img-wrap {
   position: relative;
   overflow: hidden;
   aspect-ratio: 1;
-  background: #f7f3ee;
+  background: linear-gradient(160deg, #fbf8f4 0%, #f1eae0 100%);
+  cursor: pointer;
+  outline: none;
 }
+.product-card .product-img-wrap:focus-visible { outline: 1px solid var(--ds-gold); outline-offset: 2px; }
 
 .product-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 1.1s cubic-bezier(0.2, 0, 0.2, 1);
 }
+.product-card:hover img { transform: scale(1.045); }
 
 .product-card .product-img-2 {
   position: absolute;
   inset: 0;
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.55s ease;
 }
+.product-card:hover .product-img-2 { opacity: 1; }
 
-.product-card:hover img:first-child {
-  transform: scale(1.03);
-}
-
-.product-card:hover .product-img-2 {
-  opacity: 1;
-}
-
-.product-card .product-actions {
+/* Warm veil — a hint of the burgundy, never grey */
+.pc-veil {
   position: absolute;
-  bottom: 0;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(107, 15, 26, 0.04) 0%, rgba(26, 10, 10, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  pointer-events: none;
+}
+.product-card:hover .pc-veil { opacity: 1; }
+
+/* Hairline frame that settles inward — the detail that makes it feel considered */
+.pc-frame {
+  position: absolute;
+  /* Bottom inset clears the Quick View bar. At 12px all round, the frame's
+     bottom edge and the ends of both verticals vanished behind the bar and
+     the rectangle read as broken rather than drawn. */
+  inset: 13px 13px 62px;
+  border: 1px solid rgba(201, 168, 76, 0.55);
+  opacity: 0;
+  transform: scale(1.025);
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.2, 0, 0.2, 1);
+  pointer-events: none;
+}
+.product-card:hover .pc-frame { opacity: 1; transform: scale(1); }
+
+/* Wishlist — quiet, in the corner, where it belongs */
+.pc-fav {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(26, 10, 10, 0.06);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  color: var(--ds-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-6px);
+  box-shadow: 0 2px 10px rgba(26, 10, 10, 0.1);
+  transition: opacity 0.35s ease, transform 0.35s ease, background 0.2s ease, color 0.2s ease;
+}
+.product-card:hover .pc-fav { opacity: 1; transform: translateY(0); }
+.pc-fav:hover { background: var(--ds-dark); color: #fff; }
+/* Already saved: stays visible, because that is state, not an offer */
+.pc-fav.is-on { opacity: 1; transform: none; background: var(--ds-burgundy); color: #fff; border-color: transparent; }
+
+/* The one action worth promoting */
+.pc-quick {
+  position: absolute;
   left: 0;
   right: 0;
-  background: rgba(26,10,10,0.85);
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 13px 12px;
+  border: none;
+  border-top: 1px solid rgba(201, 168, 76, 0.55);
+  background: rgba(26, 10, 10, 0.82);
+  backdrop-filter: blur(3px);
   color: #fff;
-  text-align: center;
-  padding: 12px;
+  cursor: pointer;
   font-family: var(--font-sans);
   font-size: 10px;
-  letter-spacing: 0.15em;
+  font-weight: 600;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
+  transform: translateY(101%);
+  transition: transform 0.42s cubic-bezier(0.2, 0, 0.2, 1), background 0.25s ease;
+}
+.product-card:hover .pc-quick { transform: translateY(0); }
+.pc-quick:hover { background: var(--ds-burgundy); }
+.pc-quick svg { opacity: 0.8; flex-shrink: 0; }
+
+/* Caption sits on whatever the section's ground is, rather than a white
+   block cut out of it — that hard edge was half of why this looked unfinished. */
+.pc-body { padding: 16px 2px 4px; }
+
+.pc-name {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--ds-dark);
+  margin-bottom: 5px;
   cursor: pointer;
+  transition: color 0.2s ease;
+}
+.pc-name:hover { color: var(--ds-burgundy); }
+
+.pc-desc {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ds-muted-soft);
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.product-card:hover .product-actions {
-  transform: translateY(0);
+.pc-price {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ds-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Language switcher */
@@ -593,7 +694,9 @@ button, a {
 
 /* ── Product card hover → always show buttons on touch ── */
 @media (hover: none) {
-  .card-hover-overlay { opacity: 1 !important; transform: translateY(0) !important; }
+  .pc-fav { opacity: 1 !important; transform: none !important; }
+  .pc-quick { transform: translateY(0) !important; }
+  .pc-veil { opacity: 0 !important; }
   .wishlist-btn { opacity: 1 !important; }
 }
 
