@@ -694,9 +694,16 @@ button, a {
 
 /* ── Product card hover → always show buttons on touch ── */
 @media (hover: none) {
+  /* No hover on touch, so anything hover-revealed has to be permanent — and a
+     permanent Quick View bar sat across the bottom of every photo, hiding the
+     ring itself. It is dropped on touch rather than pinned open: tapping the
+     card already opens the full product page, which does everything Quick View
+     does and more, so nothing is actually lost.
+     The wishlist stays, because there is no other way to reach it. */
+  .pc-quick { display: none !important; }
   .pc-fav { opacity: 1 !important; transform: none !important; }
-  .pc-quick { transform: translateY(0) !important; }
   .pc-veil { opacity: 0 !important; }
+  .pc-frame { opacity: 0 !important; }
   .wishlist-btn { opacity: 1 !important; }
 }
 
