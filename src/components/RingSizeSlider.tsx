@@ -19,7 +19,7 @@ export default function RingSizeSlider({ value, onChange, min = RING_SIZE_MIN, m
   const percent = ((value - min) / (max - min)) * 100;
 
   return (
-    <div style={{ width: '100%', maxWidth: 340 }}>
+    <div style={{ width: '100%' }}>
       <div style={{ position: 'relative', height: 36, display: 'flex', alignItems: 'center' }}>
         <div
           style={{

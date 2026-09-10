@@ -348,6 +348,12 @@ export default function AdminPage() {
     const cleanVariants = (form.materialVariants || []).map(v => ({
       name: sanitizeText(v.name, 50),
       price: sanitizeNumber(v.price, 0, 999999),
+      // BUG FIX: this used to drop priceMax entirely on save, which meant
+      // every variant silently lost its Max price — the ring-size slider
+      // then had nothing to interpolate toward, so the price never moved.
+      ...(v.priceMax !== undefined && v.priceMax !== null && v.priceMax > 0
+        ? { priceMax: sanitizeNumber(v.priceMax, 0, 999999) }
+        : {}),
     })).filter(v => v.name);
 
     // Sanitize stone sizes
@@ -1138,6 +1144,13 @@ export default function AdminPage() {
                                 );
                               })}
                             </div>
+                            {isRingCategory(form.category) && (form.materialVariants || []).some(v => v.name.startsWith(mat) && !v.priceMax) && (
+                              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#a35', marginTop: 8, lineHeight: 1.5 }}>
+                                {language === 'sq'
+                                  ? '⚠ Pa Max, çmimi mbetet i njëjtë për çdo madhësi unaze për këtë material.'
+                                  : '⚠ No Max set — price will stay flat across every ring size for this material.'}
+                              </p>
+                            )}
                           </div>
                           );
                         })}
