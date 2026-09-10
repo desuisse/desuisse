@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -334,6 +334,30 @@ const EDUCATION_ITEMS: FeatureItem[] = [
   },
 ];
 
+/**
+ * Related products, memoised.
+ *
+ * This exists as its own component rather than a useMemo inside the page,
+ * because the page returns early while the product is still loading. A hook
+ * placed after that guard runs on some renders and not others, which is
+ * exactly React error #310 — "rendered more hooks than during the previous
+ * render" — and it took the whole product page down. A memoised child has no
+ * such hazard: the parent's hook list is unconditional.
+ */
+const RelatedProducts = memo(function RelatedProducts({ products, title }: { products: Product[]; title: string }) {
+  if (products.length === 0) return null;
+  return (
+    <section style={{ background: '#f7f3ee', padding: '60px 40px', marginTop: 20 }}>
+      <div style={{ maxWidth: 1300, margin: '0 auto' }}>
+        <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 40 }}>{title}</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 24 }}>
+          {products.map(p => <ProductCard key={p.id} product={p} />)}
+        </div>
+      </div>
+    </section>
+  );
+});
+
 // ── Main product page ─────────────────────────────────────────
 export default function ProductPage() {
   const { id: rawId } = useParams<{ id: string }>();
@@ -466,22 +490,6 @@ export default function ProductPage() {
     letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999',
     marginBottom: 10, display: 'block',
   };
-
-  /* Memoised so that dragging the ring size slider — which fires a state
-     update per animation frame — does not re-render every related product
-     card alongside it. None of this depends on the selected size. */
-  const relatedGrid = useMemo(() => (
-    related.length > 0 ? (
-      <section style={{ background: '#f7f3ee', padding: '60px 40px', marginTop: 20 }}>
-        <div style={{ maxWidth: 1300, margin: '0 auto' }}>
-          <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 40 }}>{t.related}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 24 }}>
-            {related.map(p => <ProductCard key={p.id} product={p} />)}
-          </div>
-        </div>
-      </section>
-    ) : null
-  ), [related, t.related]);
 
   return (
     <>
@@ -745,7 +753,7 @@ export default function ProductPage() {
       />
 
       {/* Related products */}
-      {relatedGrid}
+      <RelatedProducts products={related} title={t.related} />
 
       {/* Schedule a meeting modal */}
       {scheduleModal && (
