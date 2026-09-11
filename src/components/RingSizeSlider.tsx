@@ -8,67 +8,79 @@ interface RingSizeSliderProps {
   onChange: (size: number) => void;
   min?: number;
   max?: number;
+  /**
+   * Optional. Given a size, return the price to show beside the thumb while
+   * dragging. This is what lets the page stay still during a drag without the
+   * customer losing sight of what the size costs.
+   */
+  formatPrice?: (size: number) => string;
 }
 
 /**
- * Drag-to-select ring size, EU sizing 45–75 by default.
+ * Drag-to-select ring size, EU sizing 45–75.
  *
- * Two things make this feel smooth, and both were bugs before:
+ * WHY THE PARENT IS NOT TOLD ON EVERY STEP
  *
- * 1. TARGET SIZE. The input used to BE the 4px track, with a 26px thumb drawn
- *    overflowing it. A range input only receives pointer events inside its own
- *    box, so the real target was 4px tall and most presses missed it. The input
- *    is now a transparent 44px strip and the visible track is painted behind it.
+ * On a ring with a size-dependent price, each step rewrites the price in the
+ * headline figure and on every material button. That re-renders the product
+ * page, and measurement on a 6x-throttled phone showed a fast drag producing a
+ * ~50ms stalled frame on such a ring and none at all on a ring whose price is
+ * flat — which is exactly the difference people reported feeling.
  *
- * 2. WHO RE-RENDERS WHILE YOU DRAG. On a ring, every step changes the price in
- *    several places, which re-renders the whole product page — related products
- *    and all. Feeding the parent on every input event meant the thumb waited for
- *    that work before it moved, so a fast drag stuttered and felt like it had
- *    let go. The thumb now runs off local state (instant, cheap) and the parent
- *    is told at most once per animation frame. The price still tracks the drag;
- *    it just can no longer hold the thumb up.
+ * Throttling those updates to one per animation frame (the previous attempt)
+ * reduced how often the work happened but not how long it took, so a fast drag
+ * still stuttered. The only real fix is to keep that work out of the drag.
+ *
+ * So: the thumb runs off local state, the price for the size under your finger
+ * is rendered by this component alone, and the parent is told exactly once —
+ * when you let go. Nothing competes with the gesture.
+ *
+ * An earlier version also committed after ~220ms of holding still. On a heavily
+ * throttled phone the gaps between touch events exceed that, so it fired mid-
+ * drag and put a 63ms stall back in. Release-only is the predictable rule.
  */
-export default function RingSizeSlider({ value, onChange, min = RING_SIZE_MIN, max = RING_SIZE_MAX }: RingSizeSliderProps) {
+export default function RingSizeSlider({
+  value,
+  onChange,
+  min = RING_SIZE_MIN,
+  max = RING_SIZE_MAX,
+  formatPrice,
+}: RingSizeSliderProps) {
   const [dragValue, setDragValue] = useState<number | null>(null);
-  const frame = useRef<number | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const pendingRef = useRef<number | null>(null);
 
-  /* While dragging, what the user sees is local state. The rest of the time it
-     follows whatever the parent says the size is. */
   const shown = dragValue ?? value;
   const percent = ((shown - min) / (max - min)) * 100;
 
+  /* If the component goes away mid-drag, the size still counts. */
   useEffect(() => () => {
-    if (frame.current !== null) cancelAnimationFrame(frame.current);
+    if (pendingRef.current !== null) onChangeRef.current(pendingRef.current);
   }, []);
 
   const handleInput = (next: number) => {
+    pendingRef.current = next;
     setDragValue(next);
-    if (frame.current !== null) cancelAnimationFrame(frame.current);
-    frame.current = requestAnimationFrame(() => {
-      frame.current = null;
-      onChangeRef.current(next);
-    });
   };
 
-  /* Hand control back to the parent once the drag is over, so an external
-     change (a different material, a reset) is reflected again. */
-  const endDrag = () => {
-    if (frame.current !== null) {
-      cancelAnimationFrame(frame.current);
-      frame.current = null;
-    }
-    if (dragValue !== null) {
-      onChangeRef.current(dragValue);
+  const commit = () => {
+    if (pendingRef.current !== null) {
+      onChangeRef.current(pendingRef.current);
+      pendingRef.current = null;
       setDragValue(null);
     }
   };
 
+  const livePrice = formatPrice ? formatPrice(shown) : null;
+
   return (
     <div className="ds-slider-wrap">
       <div className="ds-slider">
-        <div className="ds-slider-badge" style={{ left: `${percent}%` }}>{shown}</div>
+        <div className="ds-slider-badge" style={{ left: `${percent}%` }}>
+          <span className="ds-slider-size">{shown}</span>
+          {livePrice && <span className="ds-slider-badge-price">{livePrice}</span>}
+        </div>
 
         {/* Painted track — purely visual, never receives the pointer */}
         <div className="ds-slider-track" aria-hidden="true">
@@ -82,12 +94,15 @@ export default function RingSizeSlider({ value, onChange, min = RING_SIZE_MIN, m
           step={1}
           value={shown}
           onChange={e => handleInput(Number(e.target.value))}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          onTouchEnd={endDrag}
-          onBlur={endDrag}
+          onPointerUp={commit}
+          onPointerCancel={commit}
+          onTouchEnd={commit}
+          onMouseUp={commit}
+          onKeyUp={commit}
+          onBlur={commit}
           className="ds-slider-input"
           aria-label="Ring size"
+          aria-valuetext={livePrice ? `${shown} — ${livePrice}` : String(shown)}
         />
       </div>
 

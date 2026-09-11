@@ -599,18 +599,31 @@ button, a {
 
 .ds-slider-badge {
   position: absolute;
-  top: -6px;
+  top: -8px;
   transform: translateX(-50%);
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
   background: var(--ds-dark);
   color: #fff;
   font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 12px;
+  padding: 4px 11px;
+  border-radius: 13px;
   white-space: nowrap;
   pointer-events: none;
   z-index: 2;
+}
+.ds-slider-size { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* The price for the size under the thumb. It lives here rather than only in
+   the headline figure so the page can stay still while you drag. */
+.ds-slider-badge-price {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ds-gold-light);
+  font-variant-numeric: tabular-nums;
+  padding-left: 7px;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .ds-slider-track {
@@ -857,17 +870,27 @@ button, a {
 }
 .ds-mega.is-open { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
 
+/* Centred as one group rather than links-left / photos-right. Pinning the two
+   to opposite edges of a 1440px panel left a hole down the middle; centring
+   turns that leftover width into margin, which reads as intended, and puts the
+   panel on the same axis as the nav labels above it. */
 .ds-mega-inner {
   max-width: 1440px;
   margin: 0 auto;
-  padding: 44px 32px 48px;
+  padding: 40px 32px 44px;
   display: flex;
-  gap: 64px;
+  justify-content: center;
+  gap: 72px;
   align-items: flex-start;
 }
 
-.ds-mega-cols { display: flex; gap: 64px; flex: 1; min-width: 0; }
-.ds-mega-col { min-width: 168px; }
+.ds-mega-cols {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 68px;
+}
+.ds-mega-col { flex: 0 0 auto; min-width: 172px; }
 
 .ds-mega-heading {
   font-family: var(--font-sans);
@@ -908,17 +931,21 @@ button, a {
 }
 
 /* ── Feature photos in the dropdown ── */
-.ds-mega-photos { display: flex; gap: 18px; flex-shrink: 0; }
+.ds-mega-photos { display: flex; gap: 20px; flex-shrink: 0; }
 
-.ds-mega-photo-card { text-decoration: none; display: block; width: 210px; }
+.ds-mega-photo-card { text-decoration: none; display: block; width: 288px; }
+/* A lone photo gets the space two would have had, rather than sitting small
+   next to a gap. */
+.ds-mega-photos:has(.ds-mega-photo-card:only-child) .ds-mega-photo-card { width: 380px; }
 
 .ds-nav-photo-frame {
   display: block;
   position: relative;
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 5 / 4;
   background: var(--ds-cream);
 }
+.ds-mega-photos:has(.ds-mega-photo-card:only-child) .ds-nav-photo-frame { aspect-ratio: 16 / 10; }
 
 .ds-nav-photo {
   width: 100%;
@@ -1428,9 +1455,11 @@ button, a {
   .ds-nav-link { font-size: 10px; letter-spacing: 0.13em; }
   .header-inner, .header-navrow { padding: 0 20px; }
   .header-appointment { font-size: 10px; letter-spacing: 0.08em; }
-  .ds-mega-cols { gap: 44px; }
+  .ds-mega-cols { gap: 40px; }
+  .ds-mega-inner { gap: 44px; }
   .ds-mega-photos { gap: 14px; }
-  .ds-mega-photo-card { width: 180px; }
+  .ds-mega-photo-card { width: 216px; }
+  .ds-mega-photos:has(.ds-mega-photo-card:only-child) .ds-mega-photo-card { width: 300px; }
 }
 
 /* Pre-mount placeholder — same height as the real header at every breakpoint

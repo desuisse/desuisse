@@ -142,7 +142,11 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
               <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>
                 {t.size}
               </p>
-              <RingSizeSlider value={selectedSizeNum || RING_SIZE_MIN} onChange={s => setSelectedSize(String(s))} />
+              <RingSizeSlider
+                value={selectedSizeNum || RING_SIZE_MIN}
+                onChange={s => setSelectedSize(String(s))}
+                formatPrice={currentVariant ? n => formatRingSizePrice(currentVariant, n) : undefined}
+              />
             </div>
           ) : product.sizes && product.sizes.length > 1 && (
             <div style={{ marginBottom: 22 }}>

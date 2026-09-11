@@ -113,6 +113,12 @@ function CoupleSection({ product, language, onPriceChange }: {
     return priceForRingSize(v, Number(size) || RING_SIZE_MIN);
   };
 
+  /* Formatter for the live price beside the slider thumb. */
+  const formatFor = (variantName: string) => {
+    const v = product.materialVariants.find(mv => mv.name === variantName);
+    return v ? (n: number) => formatRingSizePrice(v, n) : undefined;
+  };
+
   const womenPrice = womenEnabled && womenVariant ? getPrice(womenVariant, womenSize) : 0;
   const menPrice = menEnabled && menVariant ? getPrice(menVariant, menSize) : 0;
   const total = womenPrice + menPrice;
@@ -135,7 +141,7 @@ function CoupleSection({ product, language, onPriceChange }: {
     fontFamily: 'var(--font-sans)', fontSize: 11, cursor: 'pointer', transition: 'all 0.18s',
   });
 
-  const GenderRing = ({ title, enabled, onToggle, variant, setVariant, size, setSize, price }: {
+  const genderRing = ({ title, enabled, onToggle, variant, setVariant, size, setSize, price }: {
     title: string; enabled: boolean; onToggle: () => void;
     variant: string; setVariant: (v: string) => void;
     size: string; setSize: (s: string) => void;
@@ -167,7 +173,11 @@ function CoupleSection({ product, language, onPriceChange }: {
           </div>
           <div>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.size}</p>
-            <RingSizeSlider value={Number(size) || RING_SIZE_MIN} onChange={s => setSize(String(s))} />
+            <RingSizeSlider
+              value={Number(size) || RING_SIZE_MIN}
+              onChange={s => setSize(String(s))}
+              formatPrice={formatFor(variant)}
+            />
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa', marginTop: 8 }}>{tl.sizeAdj}</p>
           </div>
         </div>
@@ -179,10 +189,10 @@ function CoupleSection({ product, language, onPriceChange }: {
     <div style={{ borderTop: '1px solid #f0ebe3', paddingTop: 24, marginTop: 8 }}>
       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 16 }}>{tl.selectGender}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <GenderRing title={tl.womens} enabled={womenEnabled} onToggle={() => setWomenEnabled(!womenEnabled)}
-          variant={womenVariant} setVariant={setWomenVariant} size={womenSize} setSize={setWomenSize} price={womenPrice} />
-        <GenderRing title={tl.mens} enabled={menEnabled} onToggle={() => setMenEnabled(!menEnabled)}
-          variant={menVariant} setVariant={setMenVariant} size={menSize} setSize={setMenSize} price={menPrice} />
+        {genderRing({ title: tl.womens, enabled: womenEnabled, onToggle: () => setWomenEnabled(!womenEnabled),
+          variant: womenVariant, setVariant: setWomenVariant, size: womenSize, setSize: setWomenSize, price: womenPrice })}
+        {genderRing({ title: tl.mens, enabled: menEnabled, onToggle: () => setMenEnabled(!menEnabled),
+          variant: menVariant, setVariant: setMenVariant, size: menSize, setSize: setMenSize, price: menPrice })}
       </div>
       {(womenEnabled || menEnabled) && (womenPrice > 0 || menPrice > 0) && (
         <div style={{ marginTop: 16, padding: '14px 20px', background: '#f7f3ee', border: '1px solid #e8e0d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -602,7 +612,13 @@ export default function ProductPage() {
                 <div style={rowStyle}>
                   <span style={rowLabelStyle}>{t.size}</span>
                   <div style={{ flex: 1 }}>
-                    <RingSizeSlider value={selectedSizeNum || RING_SIZE_MIN} onChange={s => setSelectedSize(String(s))} />
+                    <RingSizeSlider
+                      value={selectedSizeNum || RING_SIZE_MIN}
+                      onChange={s => setSelectedSize(String(s))}
+                      /* Shown beside the thumb, so the price still tracks the
+                         drag while the rest of the page stays still. */
+                      formatPrice={currentVariant ? n => formatRingSizePrice(currentVariant, n) : undefined}
+                    />
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa', marginTop: 8 }}>{t.sizeAdjust}</p>
                   </div>
                 </div>
