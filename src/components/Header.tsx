@@ -36,8 +36,10 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(null);
 
+  const lastScrollRef = useRef(0);
   const ticking = useRef(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,31 +60,28 @@ export default function Header() {
     setOpenKey(null);
   }, []);
 
-  /* The header no longer hides on scroll-down or changes height on scroll.
-     Both were sources of the jumping:
-
-     1. It is a sticky element, so it sits in normal flow. Animating its height
-        physically pushes every pixel of the page up or down for the length of
-        the animation — while you are scrolling through it.
-     2. The show/hide flipped on an 8px direction change, so ordinary trackpad
-        momentum slid a 155px-tall header in and out repeatedly.
-
-     All that is left is a shadow, which costs no layout. It uses separate
-     thresholds on the way in and out so it cannot flicker at the boundary. */
   useEffect(() => {
     const handleScroll = () => {
       if (ticking.current) return;
       ticking.current = true;
       requestAnimationFrame(() => {
         const y = window.scrollY;
-        setScrolled(prev => (prev ? y > 12 : y > 48));
+        const prev = lastScrollRef.current;
+        setScrolled(y > 40);
+        if (y > 160 && y - prev > 8) setHidden(true);
+        else if (prev - y > 8) setHidden(false);
+        lastScrollRef.current = y;
         ticking.current = false;
       });
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  /* A dropdown left hanging while the header slides away looks broken. */
+  useEffect(() => {
+    if (hidden) closeMenuNow();
+  }, [hidden, closeMenuNow]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeMenuNow(); };
@@ -106,6 +105,7 @@ export default function Header() {
     <>
       <header
         className={`site-header${scrolled ? ' is-scrolled' : ''}${openKey ? ' has-menu-open' : ''}`}
+        style={{ transform: hidden ? 'translateY(-110%)' : 'translateY(0)' }}
       >
         {/* ── ROW 1 — wordmark ── */}
         <div className="header-inner">
