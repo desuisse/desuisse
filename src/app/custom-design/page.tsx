@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProcessVideo from '@/components/ProcessVideo';
@@ -72,12 +73,22 @@ export default function CustomDesignPage() {
         </Link>
       </div>
 
-      {/* Hero photo space */}
+      {/* Hero photo. Held at the photograph's own 16:9 rather than the 16:6
+          the placeholder box used — that crop would have cut the hands out of
+          the frame, and the hands are what makes this read as bespoke work
+          rather than stock product photography. */}
       <Reveal>
         <div style={{ maxWidth: 1300, margin: '60px auto 0', padding: '0 40px' }}>
-          <div style={{ background: '#f7f3ee', border: '1px dashed #e8e0d4', aspectRatio: '16/6', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Hero Photo — public/images/custom-hero.jpg</p>
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', overflow: 'hidden', background: '#f7f3ee' }}>
+            <Image
+              src="/images/custom-hero.webp"
+              alt={language === 'sq'
+                ? 'Dizajnere duke skicuar me dorë një unazë fejese me diamant oval'
+                : 'Designer hand-sketching an oval diamond engagement ring'}
+              fill
+              sizes="(max-width: 1300px) 100vw, 1220px"
+              style={{ objectFit: 'cover' }}
+            />
           </div>
         </div>
       </Reveal>

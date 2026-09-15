@@ -184,24 +184,32 @@ function CategoryCarousel({ categories }: { categories: { key: string; label: st
 // 3. Save — they appear in the carousel automatically.
 
 const inspirationPhotos = [
-  // ↓ Replace these with your actual photos
-  // { src: '/images/inspiration-1.jpg', alt: 'deSuisse ring on hand' },
-  // { src: '/images/inspiration-2.jpg', alt: 'Gold necklace close-up' },
-  // { src: '/images/inspiration-3.jpg', alt: 'Wedding bands' },
-  // { src: '/images/inspiration-4.jpg', alt: 'Earrings detail' },
-  // { src: '/images/inspiration-5.jpg', alt: 'Engagement ring' },
-  // Placeholder entries until you add real photos:
-  { src: '', alt: 'Photo 1', label: 'inspiration-1.jpg' },
-  { src: '', alt: 'Photo 2', label: 'inspiration-2.jpg' },
-  { src: '', alt: 'Photo 3', label: 'inspiration-3.jpg' },
-  { src: '', alt: 'Photo 4', label: 'inspiration-4.jpg' },
-  { src: '', alt: 'Photo 5', label: 'inspiration-5.jpg' },
+  { src: '/images/inspiration-1.webp', alt: 'Pear-cut diamond earrings and an open pavé wrap ring in white gold', label: 'inspiration-1.webp' },
+  { src: '/images/inspiration-2.webp', alt: 'Amethyst and morganite halo drop earrings with a matching rose gold ring', label: 'inspiration-2.webp' },
+  { src: '/images/inspiration-3.webp', alt: 'Heart-cut aquamarine drop earrings and halo ring in white gold', label: 'inspiration-3.webp' },
+  { src: '/images/inspiration-4.webp', alt: 'Heart-cut diamond pendant with a matching stud earring and halo ring', label: 'inspiration-4.webp' },
+  { src: '/images/inspiration-5.webp', alt: 'Pear-cut ruby and diamond halo earrings, pendant and ring', label: 'inspiration-5.webp' },
 ];
 
 function InspirationCarousel({ language }: { language: string }) {
   const [index, setIndex] = useState(0);
-  const visibleCount = 3;
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  useEffect(() => {
+    const update = () => {
+      if (window.innerWidth < 560) setVisibleCount(1);
+      else if (window.innerWidth < 900) setVisibleCount(2);
+      else setVisibleCount(3);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
   const max = Math.max(0, inspirationPhotos.length - visibleCount);
+  // Fewer cards on screen means fewer pages — clamp so the last slide can
+  // never scroll past the final photo after a resize.
+  useEffect(() => { setIndex(i => Math.min(i, max)); }, [max]);
 
   const prev = () => setIndex(i => Math.max(0, i - 1));
   const next = () => setIndex(i => Math.min(max, i + 1));
