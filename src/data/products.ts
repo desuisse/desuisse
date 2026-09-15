@@ -40,6 +40,15 @@ export interface Product {
   stoneSizes?: string[];
   hasCoupleOption?: boolean;
   hasEngraving?: boolean;
+  /**
+   * Per-stone surcharge in euros, ADDED to the material variant's price.
+   * Keyed by the stone name exactly as it appears in STONE_OPTIONS, e.g.
+   *   { 'Moissanite': 0, 'Lab Diamond': 400, 'Diamond': 1800 }
+   * A surcharge composes with the material/carat price and the ring-size
+   * interpolation, so a product with five metals still needs three numbers
+   * rather than fifteen.
+   */
+  stoneSurcharges?: Record<string, number>;
 }
 
 export const MATERIAL_OPTIONS = ['Yellow Gold','White Gold','Rose Gold','Silver','Platinum'];
@@ -180,4 +189,52 @@ export function priceForRingSize(variant: MaterialVariant, size: number): number
 
 export function formatRingSizePrice(variant: MaterialVariant, size: number): string {
   return `${priceForRingSize(variant, size).toLocaleString('de-DE')}.00€`;
+}
+
+// ── Stone pricing ─────────────────────────────────────────────
+// The stone is priced as a surcharge rather than an absolute figure so it
+// stacks on top of whatever metal, carat and ring size the customer picked.
+// Anything missing or malformed reads as zero: a broken surcharge must never
+// silently *lower* a price.
+export function getStoneSurcharge(
+  product: Pick<Product, 'stoneSurcharges'> | null | undefined,
+  stone: string | undefined | null,
+): number {
+  if (!product || !stone || !product.stoneSurcharges) return 0;
+  const value = product.stoneSurcharges[stone];
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 0;
+  return Math.round(value);
+}
+
+/** '+1.800€' for a positive surcharge, empty string for none. */
+export function formatStoneSurcharge(amount: number): string {
+  return amount > 0 ? `+${amount.toLocaleString('de-DE')}€` : '';
+}
+
+/**
+ * THE price function. Product page, cart and the order API all call this, so
+ * a customer cannot end up with one number on screen and another in the
+ * order record — the bug class that makes a shop quietly lose money.
+ */
+export function resolveUnitPrice(
+  product: Product,
+  opts: { variantName?: string; size?: string | number; stone?: string },
+): number {
+  const variant =
+    (product.materialVariants || []).find(v => v.name === opts.variantName) ||
+    getDefaultVariant(product);
+
+  const sizeNum = Number(opts.size);
+  const hasSize = Number.isFinite(sizeNum) && sizeNum > 0;
+
+  let base: number;
+  if (variant) {
+    base = isRingCategory(product.category) && hasSize
+      ? priceForRingSize(variant, sizeNum)
+      : variant.price;
+  } else {
+    base = product.price || 0;
+  }
+
+  return base + getStoneSurcharge(product, opts.stone);
 }

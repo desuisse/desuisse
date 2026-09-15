@@ -348,11 +348,26 @@ export default function CheckoutPage() {
                         shippingMethod: shipping.method,
                         // NOTE: paymentMethod only — card number is NOT sent
                         paymentMethod: payment.method,
+                        // The cart itself. Prices are re-derived server-side
+                        // from the catalogue; these are sent only so the server
+                        // can flag a disagreement (stale cart, edited request).
+                        items: items.map(it => ({
+                          productId: it.product.id,
+                          qty: it.qty,
+                          material: it.selectedMaterial,
+                          size: it.selectedSize,
+                          stone: it.selectedStone,
+                          unitPrice: it.unitPrice,
+                        })),
                         // For real payments, send a Stripe Payment Intent ID here instead
                       }),
                     });
                     if (res.status === 429) { setStepError('Too many requests. Please wait a moment.'); return; }
-                    if (!res.ok) { setStepError('Something went wrong. Please try again.'); return; }
+                    if (!res.ok) {
+                      const detail = await res.json().catch(() => null) as { error?: string } | null;
+                      setStepError(detail?.error || 'Something went wrong. Please try again.');
+                      return;
+                    }
                     clearCart();
                     setSubmitted(true);
                   } catch { setStepError('Connection error. Please check your internet.'); }
@@ -388,9 +403,9 @@ export default function CheckoutPage() {
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#1a0a0a', fontWeight: 600, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {it.product.name}
                     </p>
-                    {(it.selectedMaterial || it.selectedSize) && (
+                    {(it.selectedMaterial || it.selectedStone || it.selectedSize) && (
                       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', marginBottom: 3, letterSpacing: '0.04em' }}>
-                        {[it.selectedMaterial, it.selectedSize].filter(Boolean).join(' · ')}
+                        {[it.selectedMaterial, it.selectedStone, it.selectedSize].filter(Boolean).join(' · ')}
                       </p>
                     )}
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#666' }}>

@@ -15,7 +15,10 @@ export const translations = {
     banner: 'Free engraving on all rings. Discover our collections.',
     hero: {
       tag: 'LUXURY JEWELLERY',
-      title: 'deSuisse',
+      title: 'CRAFTED FOR A LIFETIME',
+      subtitle: 'Distinctive jewellery, created for your story.',
+      ctaPrimary: 'DISCOVER COLLECTIONS',
+      ctaSecondary: 'CUSTOM DESIGN',
       cta: 'SHOP NOW',
     },
     home: {
@@ -155,7 +158,10 @@ At the age of 16, Bajram Sahatciu, as the first in the family, received an educa
     banner: 'Gravim falas në të gjitha unazat. Zbuloni koleksionet tona.',
     hero: {
       tag: 'BIZHUTERI LUKSOZE',
-      title: 'deSuisse',
+      title: 'PUNUAR PËR PËRJETËSI',
+      subtitle: 'Bizhuteri të veçanta, krijuar për historinë tuaj.',
+      ctaPrimary: 'ZBULO KOLEKSIONET',
+      ctaSecondary: 'DIZAJN I PERSONALIZUAR',
       cta: 'BLEJ TANI',
     },
     home: {

@@ -103,7 +103,11 @@ export default function CartDrawer() {
                 {/* Info */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.05rem', fontWeight: 500, color: '#1a0a0a', marginBottom: 3 }}>{item.product.name}</p>
-                  {item.selectedMaterial && <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#999', marginBottom: 2, letterSpacing: '0.04em' }}>{item.selectedMaterial}</p>}
+                  {(item.selectedMaterial || item.selectedStone) && (
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#999', marginBottom: 2, letterSpacing: '0.04em' }}>
+                      {[item.selectedMaterial, item.selectedStone].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                   {item.selectedSize && <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#999', marginBottom: 6, letterSpacing: '0.04em' }}>{language === 'sq' ? 'Madhësia' : 'Size'}: {item.selectedSize}</p>}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     {/* Qty */}

@@ -10,17 +10,6 @@ import { useLanguage } from '@/lib/LanguageContext';
 import { fetchProducts, Product, CATEGORIES } from '@/data/products';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 
-// ── Parallax hook ─────────────────────────────────────────────
-function useParallax(speed = 0.4) {
-  const [offset, setOffset] = useState(0);
-  useEffect(() => {
-    const handleScroll = () => setOffset(window.scrollY * speed);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [speed]);
-  return offset;
-}
-
 // ── Intersection observer for fade-in-up ─────────────────────
 function useReveal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -317,7 +306,6 @@ export default function HomePage() {
   const { t, language } = useLanguage();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [siteImages, setSiteImages] = useState<SiteImages>(DEFAULT_SITE_IMAGES);
-  const parallax = useParallax(0.35);
 
   useEffect(() => {
     fetchProducts().then(products => {
@@ -342,55 +330,42 @@ export default function HomePage() {
     <>
       <Header />
 
-      {/* ── HERO with parallax ── */}
-      <section style={{ position: 'relative', height: '100vh', minHeight: 600, overflow: 'hidden' }}>
-        {/* Parallax image layer */}
-        <div style={{
-          position: 'absolute', inset: '-20% 0',
-          transform: `translateY(${parallax}px)`,
-          willChange: 'transform',
-        }}>
+      {/* ── HERO ──
+          The headline, rule and both calls to action are live DOM, not pixels
+          baked into the photograph. That keeps them sharp at any pixel density,
+          lets them follow the ALB/EN switch, and makes the two buttons real
+          links that search engines and screen readers can follow. The photo
+          itself is still whatever the admin panel has set, so it stays
+          swappable without touching code. */}
+      <section className="home-hero">
+        <div className="home-hero-media">
           <Image
             src={siteImages.hero}
-            alt="deSuisse"
+            alt={language === 'sq'
+              ? 'Unazë fejese me diamant oval, punuar me dorë'
+              : 'Hand-finished oval diamond engagement ring'}
             fill
-            style={{ objectFit: 'cover', objectPosition: 'center 30%' }}
+            sizes="100vw"
+            style={{ objectFit: 'cover' }}
             priority
             unoptimized
-            onError={() => {}}
           />
+          {/* Soft left-hand scrim. The photograph is bright but not evenly so —
+              this guarantees the copy has a readable ground without visibly
+              tinting the frame. */}
+          <div className="home-hero-scrim" />
         </div>
-        {/* Dark overlay.
-            Two layers on purpose: a vertical gradient for the top and bottom
-            edges, plus a soft radial pool behind the centred wordmark. With
-            the single 0.3 mid-stop the gold eyebrow text sat on whatever the
-            photo happened to be doing and often vanished — this guarantees a
-            readable ground for the text regardless of which hero image is
-            uploaded in the admin. */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(26,10,10,0.6) 0%, rgba(26,10,10,0.38) 45%, rgba(26,10,10,0.72) 100%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 55% at 50% 52%, rgba(26,10,10,0.5) 0%, rgba(26,10,10,0) 70%)' }} />
-        {/* Fallback dark bg if image missing */}
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1a0a0a 0%, #3d1a1a 50%, #6b0f1a 100%)', zIndex: -1 }} />
-        {/* Hero content */}
-        <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: '#fff', padding: '0 40px' }}>
-          <p className="fade-up" style={{ fontFamily: 'var(--font-sans)', fontSize: 11, letterSpacing: '0.5em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 28 }}>
-            LUXURY JEWELLERY
-          </p>
-          {/* Local SVG logo — works on all devices, no external dependency */}
-          <div className="fade-up fade-up-delay-1" style={{ marginBottom: 48 }}>
-            <img
-              src="/images/desuisse-logo-white.png"
-              alt="deSuisse Luxury Jewellery"
-              style={{ width: 'clamp(200px, 38vw, 380px)', height: 'auto', display: 'block' }}
-            />
+
+        <div className="home-hero-inner">
+          <div className="home-hero-copy">
+            <h1 className="home-hero-title fade-up">{t.hero.title}</h1>
+            <div className="home-hero-rule fade-up fade-up-delay-1" />
+            <p className="home-hero-sub fade-up fade-up-delay-1">{t.hero.subtitle}</p>
+            <div className="home-hero-actions fade-up fade-up-delay-2">
+              <Link href="/shop" className="home-hero-btn">{t.hero.ctaPrimary}</Link>
+              <Link href="/custom-design" className="home-hero-btn">{t.hero.ctaSecondary}</Link>
+            </div>
           </div>
-          <Link href="/shop" className="btn-gold fade-up fade-up-delay-2" style={{ display: 'inline-block', fontSize: 12, letterSpacing: '0.25em' }}>
-            {t.hero.cta}
-          </Link>
-        </div>
-        {/* Scroll indicator */}
-        <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', animation: 'bounce 2s infinite', color: '#c9a84c', opacity: 0.7 }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
         </div>
       </section>
 

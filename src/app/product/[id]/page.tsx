@@ -10,7 +10,7 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
 import FeatureCards, { FeatureItem } from '@/components/FeatureCards';
 import { sanitizeEngraving } from '@/lib/security';
@@ -438,11 +438,26 @@ export default function ProductPage() {
   const selectedSizeNum = selectedSize ? Number(selectedSize) : null;
   const ringSizePriceApplies = isRing && !!selectedSizeNum && !!currentVariant;
 
+  // A diamond, a lab diamond and a moissanite are three different prices for
+  // the same setting, so the stone is a surcharge on top of whatever the metal,
+  // carat and ring size already cost.
+  const stoneExtra = getStoneSurcharge(product, selectedStone);
+  const fmtEuro = (n: number) => `${n.toLocaleString('de-DE')}.00€`;
+
+  /** Price label for one material variant, stone included. */
+  const variantPriceLabel = (v: MaterialVariant) => {
+    if (ringSizePriceApplies) return fmtEuro(priceForRingSize(v, selectedSizeNum as number) + stoneExtra);
+    if (!stoneExtra) return formatVariantPrice(v);
+    return v.priceMax && v.priceMax > v.price
+      ? `${fmtEuro(v.price + stoneExtra)} – ${fmtEuro(v.priceMax + stoneExtra)}`
+      : fmtEuro(v.price + stoneExtra);
+  };
+
   const displayPrice = product.hasCoupleOption
-    ? (couplePrice > 0 ? `${couplePrice.toLocaleString('de-DE')}.00€` : formatPrice(product))
+    ? (couplePrice > 0 ? fmtEuro(couplePrice + stoneExtra) : formatPrice(product))
     : currentVariant
-      ? (ringSizePriceApplies ? `${priceForRingSize(currentVariant, selectedSizeNum as number).toLocaleString('de-DE')}.00€` : formatVariantPrice(currentVariant))
-      : formatPrice(product);
+      ? variantPriceLabel(currentVariant)
+      : (stoneExtra && product.price > 0 ? fmtEuro(product.price + stoneExtra) : formatPrice(product));
   // A ring size resolves the material's Min–Max range to one exact number,
   // so the "confirmed after weighing" hedge only makes sense when there's
   // no slider driving it to a concrete figure (e.g. bracelets, necklaces).
@@ -551,7 +566,7 @@ export default function ProductPage() {
                     {product.materialVariants.map(v => (
                       <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ ...activeBtnStyle(selectedVariant === v.name), display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px' }}>
                         <span>{v.name}</span>
-                        <span style={{ fontSize: 10, opacity: 0.75, fontVariantNumeric: 'tabular-nums', minWidth: 78, textAlign: 'center' }}>{ringSizePriceApplies ? formatRingSizePrice(v, selectedSizeNum as number) : formatVariantPrice(v)}</span>
+                        <span style={{ fontSize: 10, opacity: 0.75, fontVariantNumeric: 'tabular-nums', minWidth: 78, textAlign: 'center' }}>{variantPriceLabel(v)}</span>
                       </button>
                     ))}
                   </div>
@@ -572,9 +587,19 @@ export default function ProductPage() {
                 <div style={rowStyle}>
                   <span style={rowLabelStyle}>{t.stone}</span>
                   <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {product.stones.map(s => (
-                      <button key={s} onClick={() => setSelectedStone(s === selectedStone ? '' : s)} style={activeBtnStyle(selectedStone === s)}>{s}</button>
-                    ))}
+                    {product.stones.map(s => {
+                      // Show what each stone costs on the chip itself, so the
+                      // customer can compare without clicking through all three.
+                      const extra = getStoneSurcharge(product, s);
+                      return (
+                        <button key={s} onClick={() => setSelectedStone(s === selectedStone ? '' : s)} style={activeBtnStyle(selectedStone === s)}>
+                          {s}
+                          {extra > 0 && (
+                            <span style={{ marginLeft: 6, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{formatStoneSurcharge(extra)}</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -696,7 +721,9 @@ export default function ProductPage() {
                 alert(language === 'sq' ? 'Çmimi nuk është i disponueshëm.' : 'Price not available — please contact us.');
                 return;
               }
-              addToCart(product, 1, selectedVariant, selectedSize, unitPrice);
+              // Same surcharge the customer just read on screen
+              unitPrice += stoneExtra;
+              addToCart(product, 1, selectedVariant, selectedSize, unitPrice, selectedStone || undefined);
             }} style={{ padding: '15px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#c9a84c'}
               onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#1a0a0a'}

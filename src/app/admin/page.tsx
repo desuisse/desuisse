@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
+import { Order, OrderStatus, ORDER_STATUSES, summarise } from '@/lib/orders';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 import { sanitizeText, sanitizeUrl, sanitizeNumber, isValidProduct, LIMITS } from '@/lib/security';
 import CloudinaryUploader from '@/components/CloudinaryUploader';
@@ -28,8 +29,40 @@ const EMPTY_PRODUCT: Omit<Product, 'id'> = {
   sku: '',
   stones: [],
   stoneSizes: [],
+  stoneSurcharges: {},
   hasCoupleOption: false,
   hasEngraving: false,
+};
+
+/**
+ * The admin product list used to render all 60+ products in one column, which
+ * meant scrolling past everything to reach anything.
+ */
+const PRODUCTS_PER_PAGE = 10;
+
+// Status vocabulary for the orders tab: colour, icon and both languages in one
+// place so a badge, a filter chip and a dropdown can never drift apart.
+const STATUS_META: Record<OrderStatus, { en: string; sq: string; color: string; bg: string; icon: React.ReactNode }> = {
+  pending: {
+    en: 'Pending', sq: 'Në pritje', color: '#b4791f', bg: '#fdf6e7',
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>,
+  },
+  confirmed: {
+    en: 'Confirmed', sq: 'Konfirmuar', color: '#1d6f42', bg: '#eaf6ee',
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.2 2.4 2.4 4.6-4.9"/></svg>,
+  },
+  shipped: {
+    en: 'Shipped', sq: 'Dërguar', color: '#2b5ea8', bg: '#eaf1fb',
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h10v9H3z"/><path d="M13 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>,
+  },
+  delivered: {
+    en: 'Delivered', sq: 'Dorëzuar', color: '#155e63', bg: '#e7f4f5',
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8.5 12 13 3 8.5 12 4z"/><path d="M3 8.5V16l9 4.5 9-4.5V8.5"/><path d="m9.2 14.6 2 1.9 3.8-3.8"/></svg>,
+  },
+  cancelled: {
+    en: 'Cancelled', sq: 'Anuluar', color: '#a52f2f', bg: '#fbecec',
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="m9.2 9.2 5.6 5.6M14.8 9.2l-5.6 5.6"/></svg>,
+  },
 };
 
 export default function AdminPage() {
@@ -46,7 +79,13 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'images' | 'backups'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'images' | 'backups'>('products');
+  const [page, setPage] = useState(1);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all');
+  const [savingStatusFor, setSavingStatusFor] = useState('');
   const [siteImages, setSiteImages] = useState<SiteImages>(DEFAULT_SITE_IMAGES);
   const [imagesSaved, setImagesSaved] = useState(false);
 
@@ -180,6 +219,62 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === 'backups' && isLoggedIn) loadBackups();
   }, [activeTab, isLoggedIn]);
+
+  // ── Orders ────────────────────────────────────────────────────────────
+  const loadOrders = async () => {
+    setOrdersLoading(true);
+    setOrdersError('');
+    try {
+      const res = await fetch('/api/orders', { credentials: 'include', cache: 'no-store' });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null) as { error?: string; hint?: string } | null;
+        setOrdersError(detail?.hint || detail?.error || `Could not load orders (HTTP ${res.status})`);
+        setOrders([]);
+        return;
+      }
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setOrdersError('Network error: ' + String(err));
+      setOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'orders' && isLoggedIn) loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isLoggedIn]);
+
+  /**
+   * Status changes go through the server and the local row is only updated
+   * once the write succeeded — an optimistic badge that silently failed to
+   * save is exactly how a shop ends up shipping an order twice.
+   */
+  const changeOrderStatus = async (id: string, status: OrderStatus) => {
+    setSavingStatusFor(id);
+    setOrdersError('');
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null) as { error?: string; hint?: string } | null;
+        setOrdersError(detail?.hint || detail?.error || `Could not update order (HTTP ${res.status})`);
+        return;
+      }
+      const updated = await res.json() as Order;
+      setOrders(prev => prev.map(o => (o.id === id ? updated : o)));
+    } catch (err) {
+      setOrdersError('Network error: ' + String(err));
+    } finally {
+      setSavingStatusFor('');
+    }
+  };
 
   /** Download all current products as a JSON file. Client-side, no server roundtrip. */
   const handleExport = () => {
@@ -324,6 +419,7 @@ export default function AdminPage() {
       sku: p.sku || '',
       stones: p.stones || [],
       stoneSizes: p.stoneSizes || [],
+      stoneSurcharges: p.stoneSurcharges || {},
       hasCoupleOption: p.hasCoupleOption || false,
       hasEngraving: p.hasEngraving || false,
     });
@@ -359,6 +455,15 @@ export default function AdminPage() {
 
     // Sanitize stone sizes
     const cleanStoneSizes = (form.stoneSizes || []).map(s => sanitizeText(s, 20)).filter(Boolean);
+
+    // Keep a surcharge only for stones this product still offers, so
+    // de-selecting a stone cannot leave a stale price behind in the record.
+    const cleanStones = (form.stones || []).map(s => sanitizeText(s, 30)).filter(Boolean);
+    const cleanStoneSurcharges = cleanStones.reduce((acc, stone) => {
+      const value = sanitizeNumber((form.stoneSurcharges || {})[stone] ?? 0, 0, 999999);
+      if (value > 0) acc[stone] = value;
+      return acc;
+    }, {} as Record<string, number>);
     // Rings always offer the full 45–75 slider — no need for the admin to
     // hand-pick individual sizes (and no way to accidentally under-select).
     const cleanSizes = isRingCategory(form.category)
@@ -383,8 +488,9 @@ export default function AdminPage() {
         materialVariants: cleanVariants,
         sizes: cleanSizes,
         sku: cleanSku || undefined,
-        stones: (form.stones || []).map(s => sanitizeText(s, 30)).filter(Boolean),
+        stones: cleanStones,
         stoneSizes: cleanStoneSizes,
+        stoneSurcharges: cleanStoneSurcharges,
         hasCoupleOption: Boolean(form.hasCoupleOption),
         hasEngraving: Boolean(form.hasEngraving),
       };
@@ -407,8 +513,9 @@ export default function AdminPage() {
               materialVariants: cleanVariants,
               sizes: cleanSizes,
               sku: cleanSku || undefined,
-              stones: (form.stones || []).map(s => sanitizeText(s, 30)).filter(Boolean),
+              stones: cleanStones,
               stoneSizes: cleanStoneSizes,
+              stoneSurcharges: cleanStoneSurcharges,
               hasCoupleOption: Boolean(form.hasCoupleOption),
               hasEngraving: Boolean(form.hasEngraving),
             }
@@ -471,11 +578,26 @@ export default function AdminPage() {
     setIsAdding(false);
   };
 
+  useEffect(() => { setPage(1); }, [searchTerm, filterCat]);
+
   const filtered = products.filter(p => {
     const matchCat = filterCat === 'all' || p.category === filterCat;
     const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  // Paging is derived, never stored: if a filter shrinks the list under the
+  // current page the view clamps instead of showing an empty column.
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
+  const currentPage = Math.min(Math.max(1, page), pageCount);
+  const pagedProducts = filtered.slice(
+    (currentPage - 1) * PRODUCTS_PER_PAGE,
+    currentPage * PRODUCTS_PER_PAGE,
+  );
+
+  const visibleOrders = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
+  const orderSummary = summarise(orders);
+  const statusLabel = (status: OrderStatus) => (language === 'sq' ? STATUS_META[status].sq : STATUS_META[status].en);
 
   const categoryLabels: Record<string, string> = Object.fromEntries(
     CATEGORIES.map(c => [c.key, language === 'sq' ? c.sq : c.en])
@@ -599,7 +721,7 @@ export default function AdminPage() {
         {/* Tab bar */}
         <div style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0 }}>
           <div style={{ display: 'flex' }}>
-            {(['products', 'images', 'backups'] as const).map(tab => (
+            {(['products', 'orders', 'images', 'backups'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{
                 padding: '18px 24px', background: 'none', border: 'none',
                 borderBottom: `2px solid ${activeTab === tab ? '#c9a84c' : 'transparent'}`,
@@ -609,9 +731,11 @@ export default function AdminPage() {
               }}>
                 {tab === 'products'
                   ? `${t.admin.products} (${products.length})`
-                  : tab === 'images'
-                    ? (language === 'sq' ? 'Fotot e Faqes' : 'Site Images')
-                    : (language === 'sq' ? 'Backup & Aktiviteti' : 'Backups & Activity')}
+                  : tab === 'orders'
+                    ? `${language === 'sq' ? 'Porositë' : 'Orders'}${orders.length ? ` (${orders.length})` : ''}`
+                    : tab === 'images'
+                      ? (language === 'sq' ? 'Fotot e Faqes' : 'Site Images')
+                      : (language === 'sq' ? 'Backup & Aktiviteti' : 'Backups & Activity')}
               </button>
             ))}
           </div>
@@ -628,6 +752,196 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* ── ORDERS TAB ── */}
+        {activeTab === 'orders' && (
+          <div style={{ padding: '32px', maxWidth: 1100 }}>
+
+            {/* Summary cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 28 }}>
+              {[
+                {
+                  label: language === 'sq' ? 'Porosi gjithsej' : 'Total orders',
+                  value: String(orderSummary.total),
+                  color: '#2b5ea8', bg: '#eaf1fb',
+                  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h12l2 5H4z"/><path d="M4 7h16v13H4z"/><path d="M9 11a3 3 0 0 0 6 0"/></svg>,
+                },
+                {
+                  label: language === 'sq' ? 'Në pritje' : 'Pending',
+                  value: String(orderSummary.byStatus.pending),
+                  color: STATUS_META.pending.color, bg: STATUS_META.pending.bg,
+                  icon: STATUS_META.pending.icon,
+                },
+                {
+                  label: language === 'sq' ? 'Konfirmuar' : 'Confirmed',
+                  value: String(orderSummary.byStatus.confirmed),
+                  color: STATUS_META.confirmed.color, bg: STATUS_META.confirmed.bg,
+                  icon: STATUS_META.confirmed.icon,
+                },
+                {
+                  label: language === 'sq' ? 'Vlera (pa të anuluarat)' : 'Revenue (excl. cancelled)',
+                  value: `${orderSummary.revenue.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`,
+                  color: '#8a6d1f', bg: '#fdf6e7',
+                  icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18"/><path d="M17 7.5C17 5.6 14.8 4.5 12 4.5S7 5.6 7 7.5s2.2 2.6 5 3.3 5 1.5 5 3.4-2.2 3.3-5 3.3-5-1.1-5-3"/></svg>,
+                },
+              ].map(card => (
+                <div key={card.label} style={{ background: '#fff', border: '1px solid #e8e0d4', padding: '18px 20px' }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 8, background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                    {card.icon}
+                  </div>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: '#1a0a0a', lineHeight: 1.2 }}>{card.value}</p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999', marginTop: 4 }}>{card.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Status filter + refresh */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {(['all', ...ORDER_STATUSES] as const).map(key => {
+                  const active = statusFilter === key;
+                  const count = key === 'all' ? orders.length : orderSummary.byStatus[key as OrderStatus];
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setStatusFilter(key as 'all' | OrderStatus)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        padding: '7px 13px',
+                        border: `1px solid ${active ? '#1a0a0a' : '#e8e0d4'}`,
+                        background: active ? '#1a0a0a' : '#fff',
+                        color: active ? '#fff' : '#666',
+                        fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600,
+                        letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer',
+                      }}
+                    >
+                      {key !== 'all' && <span style={{ display: 'flex' }}>{STATUS_META[key as OrderStatus].icon}</span>}
+                      {key === 'all' ? (language === 'sq' ? 'Të gjitha' : 'All') : statusLabel(key as OrderStatus)} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={loadOrders}
+                disabled={ordersLoading}
+                style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #e8e0d4', color: '#999', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: ordersLoading ? 'default' : 'pointer' }}
+              >
+                {ordersLoading ? '…' : (language === 'sq' ? 'Rifresko' : 'Refresh')}
+              </button>
+            </div>
+
+            {ordersError && (
+              <div style={{ background: '#fbecec', border: '1px solid #f0d4d4', color: '#a52f2f', padding: '12px 16px', fontFamily: 'var(--font-sans)', fontSize: 12, marginBottom: 16 }}>
+                {ordersError}
+              </div>
+            )}
+
+            {/* Order list */}
+            {ordersLoading && orders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: '#999', fontSize: 13 }}>…</div>
+            ) : visibleOrders.length === 0 ? (
+              <div style={{ background: '#fff', border: '1px solid #e8e0d4', textAlign: 'center', padding: '56px 0', color: '#999', fontFamily: 'var(--font-sans)', fontSize: 13 }}>
+                {language === 'sq' ? 'Ende asnjë porosi.' : 'No orders yet.'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {visibleOrders.map(order => {
+                  const meta = STATUS_META[order.status] ?? STATUS_META.pending;
+                  return (
+                    <div key={order.id} style={{ background: '#fff', border: '1px solid #e8e0d4', padding: '18px 20px' }}>
+                      {/* Row 1 — id, status, total */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 700, color: '#1a0a0a' }}>{order.id}</span>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          background: meta.bg, color: meta.color,
+                          padding: '4px 10px', borderRadius: 999,
+                          fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700,
+                          letterSpacing: '0.08em', textTransform: 'uppercase',
+                        }}>
+                          {meta.icon}
+                          {statusLabel(order.status)}
+                        </span>
+                        {order.priceAdjusted && (
+                          <span title={language === 'sq' ? 'Çmimet u rillogaritën nga serveri — kontrollo para konfirmimit.' : 'Prices were recalculated server-side — check before confirming.'}
+                            style={{ background: '#fdf6e7', color: '#b4791f', padding: '4px 10px', borderRadius: 999, fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                            ⚠ {language === 'sq' ? 'Çmimi i rillogaritur' : 'Price adjusted'}
+                          </span>
+                        )}
+                        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 700, color: '#1a0a0a' }}>
+                          {order.total.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                        </span>
+                      </div>
+
+                      {/* Row 2 — who and when */}
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#666', marginBottom: 2 }}>
+                        {order.customer.firstName} {order.customer.lastName} · {order.customer.email}
+                        {order.customer.phone ? ` · ${order.customer.phone}` : ''}
+                      </p>
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa', marginBottom: 12 }}>
+                        {new Date(order.createdAt).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-GB')}
+                        {' · '}{order.shipping.city}, {order.shipping.country}
+                        {' · '}{order.shipping.method}
+                        {' · '}{order.paymentMethod}
+                      </p>
+
+                      {/* Items */}
+                      <div style={{ borderTop: '1px solid #f0ebe3', paddingTop: 10, marginBottom: 12 }}>
+                        {order.items.map((item, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline', fontFamily: 'var(--font-sans)', fontSize: 12, color: '#555', padding: '3px 0' }}>
+                            <span style={{ color: '#999' }}>{item.qty}×</span>
+                            <span style={{ flex: 1 }}>
+                              {item.name}
+                              <span style={{ color: '#aaa' }}>
+                                {[item.material, item.stone, item.size].filter(Boolean).length > 0
+                                  ? ` · ${[item.material, item.stone, item.size].filter(Boolean).join(' · ')}`
+                                  : ''}
+                              </span>
+                            </span>
+                            <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                              {item.lineTotal.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Status control */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#bbb' }}>
+                          {language === 'sq' ? 'Statusi' : 'Status'}
+                        </span>
+                        {ORDER_STATUSES.map(status => {
+                          const active = order.status === status;
+                          const sm = STATUS_META[status];
+                          return (
+                            <button
+                              key={status}
+                              onClick={() => { if (!active) changeOrderStatus(order.id, status); }}
+                              disabled={savingStatusFor === order.id}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 5,
+                                padding: '6px 11px',
+                                border: `1px solid ${active ? sm.color : '#e8e0d4'}`,
+                                background: active ? sm.bg : '#fff',
+                                color: active ? sm.color : '#888',
+                                fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600,
+                                cursor: active || savingStatusFor === order.id ? 'default' : 'pointer',
+                                opacity: savingStatusFor === order.id && !active ? 0.5 : 1,
+                              }}
+                            >
+                              {sm.icon}
+                              {statusLabel(status)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── SITE IMAGES TAB ── */}
         {activeTab === 'images' && (
@@ -921,7 +1235,7 @@ export default function AdminPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {filtered.map((product) => (
+                {pagedProducts.map((product) => (
                   <div
                     key={product.id}
                     style={{
@@ -978,6 +1292,56 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Pager — only when there is more than one page to walk */}
+            {filtered.length > 0 && pageCount > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 20, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999' }}>
+                  {language === 'sq'
+                    ? `${(currentPage - 1) * PRODUCTS_PER_PAGE + 1}–${Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} nga ${filtered.length}`
+                    : `${(currentPage - 1) * PRODUCTS_PER_PAGE + 1}–${Math.min(currentPage * PRODUCTS_PER_PAGE, filtered.length)} of ${filtered.length}`}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '7px 12px', background: '#fff',
+                      border: '1px solid #e8e0d4', color: currentPage === 1 ? '#ccc' : '#1a0a0a',
+                      fontSize: 11, fontWeight: 600, cursor: currentPage === 1 ? 'default' : 'pointer',
+                    }}
+                  >
+                    ←
+                  </button>
+                  {Array.from({ length: pageCount }, (_, i) => i + 1).map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setPage(n)}
+                      style={{
+                        minWidth: 32, padding: '7px 10px',
+                        background: n === currentPage ? '#1a0a0a' : '#fff',
+                        border: `1px solid ${n === currentPage ? '#1a0a0a' : '#e8e0d4'}`,
+                        color: n === currentPage ? '#fff' : '#666',
+                        fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setPage(currentPage + 1)}
+                    disabled={currentPage === pageCount}
+                    style={{
+                      padding: '7px 12px', background: '#fff',
+                      border: '1px solid #e8e0d4', color: currentPage === pageCount ? '#ccc' : '#1a0a0a',
+                      fontSize: 11, fontWeight: 600, cursor: currentPage === pageCount ? 'default' : 'pointer',
+                    }}
+                  >
+                    →
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -1224,6 +1588,41 @@ export default function AdminPage() {
                     })}
                   </div>
                 </div>
+
+                {/* Stone prices — a surcharge per stone, added on top of the
+                    metal price, so three numbers cover every metal and size. */}
+                {(form.stones || []).filter(s => s !== 'No Stone').length > 0 && (
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>
+                      {language === 'sq' ? 'Çmimi shtesë i gurit (€)' : 'Stone surcharge (€)'}
+                    </label>
+                    <p style={{ fontSize: 10, color: '#aaa', lineHeight: 1.6, marginBottom: 10 }}>
+                      {language === 'sq'
+                        ? 'Shtohet mbi çmimin e materialit. P.sh. Moissanite 0, Lab Diamond 400, Diamond 1800.'
+                        : 'Added on top of the material price. e.g. Moissanite 0, Lab Diamond 400, Diamond 1800.'}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {(form.stones || []).filter(s => s !== 'No Stone').map(stone => (
+                        <div key={stone} style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: 10, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, color: '#555' }}>{stone}</span>
+                          <input
+                            type="number"
+                            min="0"
+                            className="ds-input"
+                            placeholder="0"
+                            value={(form.stoneSurcharges || {})[stone] ?? ''}
+                            onChange={e => {
+                              const next = { ...(form.stoneSurcharges || {}) };
+                              if (e.target.value === '') delete next[stone];
+                              else next[stone] = Number(e.target.value);
+                              setForm({ ...form, stoneSurcharges: next });
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Stone sizes — free text input, comma separated */}
                 {(form.stones || []).length > 0 && (

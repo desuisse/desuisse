@@ -11,7 +11,7 @@ export interface SiteImages {
 }
 
 export const DEFAULT_SITE_IMAGES: SiteImages = {
-  hero: '/images/hero-ring.jpg',
+  hero: '/images/hero-oval-ring.webp',
   catEveryday:       '/images/cat-everyday.jpg',
   catEngagement:     '/images/cat-engagement.jpg',
   catWedding:        '/images/cat-wedding.jpg',

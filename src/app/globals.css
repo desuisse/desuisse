@@ -1632,3 +1632,136 @@ button, a {
   color: rgba(255, 255, 255, 0.82);
 }
 .dg-origin.is-lab .dg-origin-caption { color: var(--ds-muted); }
+
+
+/* ── Home hero ────────────────────────────────────────────────
+   The hero photograph is a high-key still life: subject on the right,
+   deliberately quiet ground on the left for the copy to sit in.
+
+   Two layouts share one piece of markup. From 900px up the copy is
+   overlaid on the photo, matching the composition. Below that the 2:1
+   crop leaves no honest room for both the ring and a headline, so the
+   copy drops beneath the image onto the same cream the photograph fades
+   into — no illegible text over a busy frame, no shrunken-to-nothing ring. */
+.home-hero {
+  position: relative;
+  background: var(--ds-cream);
+  overflow: hidden;
+}
+
+.home-hero-media {
+  position: relative;
+  width: 100%;
+  height: clamp(460px, 76vh, 780px);
+}
+
+/* next/image sets object-fit inline; object-position belongs here so the
+   focal point can be tuned per breakpoint without touching the component. */
+.home-hero-media img { object-position: 50% 50%; }
+
+.home-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg,
+    rgba(250, 246, 240, 0.93) 0%,
+    rgba(250, 246, 240, 0.76) 26%,
+    rgba(250, 246, 240, 0.30) 48%,
+    rgba(250, 246, 240, 0) 66%);
+}
+
+.home-hero-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 clamp(24px, 6vw, 96px);
+}
+
+.home-hero-copy { max-width: 700px; }
+
+.home-hero-title {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(28px, 3.4vw, 46px);
+  line-height: 1.16;
+  letter-spacing: 0.12em;
+  color: var(--ds-dark);
+}
+
+.home-hero-rule {
+  width: 68px;
+  height: 1px;
+  background: var(--ds-gold);
+  margin: 26px 0;
+}
+
+/* Deliberately darker than --ds-muted: that grey is tuned for solid white
+   panels and goes soft over a photograph, even one this bright. */
+.home-hero-sub {
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1.05vw, 16px);
+  line-height: 1.75;
+  color: #574c42;
+  max-width: 460px;
+}
+
+.home-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 36px;
+}
+
+/* Gold border, dark label. The .btn-gold used elsewhere puts gold text on
+   its ground, which over cream lands near 2:1 contrast — fine on the old
+   dark hero, unreadable on this one. */
+.home-hero-btn {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--ds-dark);
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--ds-gold);
+  padding: 16px 34px;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.home-hero-btn:hover {
+  background: var(--ds-gold);
+  color: var(--ds-dark);
+  border-color: var(--ds-gold);
+}
+
+.home-hero-btn:focus-visible {
+  outline: 2px solid var(--ds-dark);
+  outline-offset: 3px;
+}
+
+@media (max-width: 899px) {
+  .home-hero-media { height: clamp(300px, 44vh, 420px); }
+  /* Hold the ring in frame once the crop tightens */
+  .home-hero-media img { object-position: 68% 50%; }
+  .home-hero-scrim { display: none; }
+
+  .home-hero-inner {
+    position: static;
+    padding: 34px clamp(20px, 6vw, 32px) 48px;
+  }
+  .home-hero-copy { max-width: none; }
+  .home-hero-title { letter-spacing: 0.1em; }
+  .home-hero-sub { max-width: none; }
+  .home-hero-actions { gap: 12px; margin-top: 28px; }
+  .home-hero-btn {
+    flex: 1 1 100%;
+    text-align: center;
+    padding: 15px 20px;
+    background: transparent;
+  }
+}
