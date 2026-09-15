@@ -90,7 +90,7 @@ export const NAV_ITEMS: NavItem[] = [
       },
     ],
     images: [
-      { image: '/images/cat-engagement.jpg', href: '/shop?category=engagement-rings', en: 'Engagement Rings', sq: 'Unaza Fejese' },
+      { image: '/images/nav-engagement.webp', href: '/shop?category=engagement-rings', en: 'Engagement Rings', sq: 'Unaza Fejese' },
       { image: '/images/craft-sketching.jpg', href: '/custom-design', en: 'Bespoke Design', sq: 'Dizajn i Personalizuar' },
     ],
   },
