@@ -1638,11 +1638,11 @@ button, a {
    The hero photograph is a high-key still life: subject on the right,
    deliberately quiet ground on the left for the copy to sit in.
 
-   Two layouts share one piece of markup. From 900px up the copy is
-   overlaid on the photo, matching the composition. Below that the 2:1
-   crop leaves no honest room for both the ring and a headline, so the
-   copy drops beneath the image onto the same cream the photograph fades
-   into — no illegible text over a busy frame, no shrunken-to-nothing ring. */
+   One piece of markup, two crops. From 900px up the copy sits in the quiet
+   left third, matching how the frame was shot. Below that the frame goes
+   tall and portrait, re-centred on the ring, with the copy overlaid along
+   the bottom on a scrim — the photo stays the hero on a phone instead of
+   becoming a band above a block of text. */
 .home-hero {
   position: relative;
   background: var(--ds-cream);
@@ -1745,23 +1745,41 @@ button, a {
 }
 
 @media (max-width: 899px) {
-  .home-hero-media { height: clamp(300px, 44vh, 420px); }
-  /* Hold the ring in frame once the crop tightens */
-  .home-hero-media img { object-position: 68% 50%; }
-  .home-hero-scrim { display: none; }
+  /* Phones keep the copy ON the photograph rather than stacked beneath it.
+     That needs three things working together: a tall enough frame that the
+     ring and the words are not fighting for the same band, a crop centred on
+     the ring (it sits ~69% across the original), and a bottom scrim so dark
+     text stays readable over the silk. Without the scrim this is the classic
+     luxury-site failure — beautiful photo, unreadable headline. */
+  .home-hero-media { height: clamp(540px, 86vh, 780px); }
+  .home-hero-media img { object-position: 69% 50%; }
+
+  .home-hero-scrim {
+    display: block;
+    background: linear-gradient(to bottom,
+      rgba(250, 246, 240, 0) 26%,
+      rgba(250, 246, 240, 0.55) 48%,
+      rgba(250, 246, 240, 0.88) 64%,
+      rgba(250, 246, 240, 0.97) 78%);
+  }
 
   .home-hero-inner {
-    position: static;
-    padding: 34px clamp(20px, 6vw, 32px) 48px;
+    position: absolute;
+    inset: auto 0 0 0;
+    align-items: flex-end;
+    padding: 0 24px 40px;
   }
+
   .home-hero-copy { max-width: none; }
-  .home-hero-title { letter-spacing: 0.1em; }
-  .home-hero-sub { max-width: none; }
-  .home-hero-actions { gap: 12px; margin-top: 28px; }
+  .home-hero-title { letter-spacing: 0.1em; font-size: clamp(27px, 8vw, 40px); }
+  .home-hero-rule { margin: 18px 0; }
+  .home-hero-sub { max-width: none; font-size: 14px; line-height: 1.7; }
+  .home-hero-actions { gap: 10px; margin-top: 24px; }
   .home-hero-btn {
     flex: 1 1 100%;
     text-align: center;
     padding: 15px 20px;
-    background: transparent;
+    /* Slightly opaque so the label never sits directly on photo detail */
+    background: rgba(255, 255, 255, 0.72);
   }
 }
