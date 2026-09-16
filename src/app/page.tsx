@@ -41,13 +41,28 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 }
 
 // ── Carousel ───────────────────────────────────────────────────
-function Carousel({ items, renderItem, visibleCount = 3 }: {
+function Carousel({ items, renderItem, visibleCount: desktopCount = 3 }: {
   items: Product[];
   renderItem: (item: Product) => React.ReactNode;
   visibleCount?: number;
 }) {
   const [index, setIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(desktopCount);
+
+  useEffect(() => {
+    const update = () => {
+      if (window.innerWidth < 560) setVisibleCount(1);
+      else if (window.innerWidth < 900) setVisibleCount(2);
+      else setVisibleCount(desktopCount);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [desktopCount]);
+
   const max = Math.max(0, items.length - visibleCount);
+  // Clamp after a resize so the last slide can never scroll past the end
+  useEffect(() => { setIndex(i => Math.min(i, max)); }, [max]);
 
   const prev = () => setIndex(i => Math.max(0, i - 1));
   const next = () => setIndex(i => Math.min(max, i + 1));

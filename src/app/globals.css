@@ -1992,3 +1992,44 @@ button, a {
 @media (max-width: 600px) {
   .admin-products-grid { padding: 14px !important; }
 }
+
+
+/* ── Phone ergonomics ─────────────────────────────────────────────
+   Measured on a 412×915 handset against the live site: header icons were
+   29px wide, footer links 20px tall, and several labels sat at 10–11px.
+   Apple and Google both ask for 44px of touch target; 10px type on a phone
+   is a squint. These raise the floor without touching the desktop design. */
+@media (max-width: 768px) {
+  /* Header utility icons — width was the problem, not height */
+  .header-icon-btn,
+  .header-cell-right > a,
+  .header-cell-right > button {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Footer links were 20px tall: legal to tap, unpleasant to hit */
+  .footer-link {
+    display: block;
+    padding: 9px 0 !important;
+    min-height: 40px;
+    font-size: 13px !important;
+    line-height: 1.6;
+  }
+
+  /* Small caps labels and buttons stop shrinking below readable */
+  .btn-gold, .btn-dark { font-size: 12px !important; padding: 15px 26px !important; }
+
+  /* The footer ran to 1.700px on a phone — a quarter of the whole page */
+  .site-footer { padding-top: 48px !important; padding-bottom: 28px !important; }
+  .footer-cols { gap: 22px !important; }
+}
+
+@media (max-width: 480px) {
+  /* This previously *reduced* buttons to 10px, which is what made
+     "SHFLETO TË GJITHA" hard to read. */
+  .btn-gold, .btn-dark { padding: 14px 22px !important; font-size: 12px !important; }
+}
