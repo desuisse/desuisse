@@ -24,7 +24,7 @@ export default function TermsPage() {
       },
       {
         title: '3. Porositja dhe Pagesa',
-        body: 'Kur vendosni një porosi, ju merrni një email konfirmimi. Stafi ynë do t\u2019ju kontaktojë për të diskutuar detajet e pagesës dhe dorëzimit.\n\n[[VENDOSNI INFORMACION TË SAKTË PËR MËNYRAT E PAGESËS — p.sh. transfertë bankare, pagesë në boutique, COD për Kosovën]]',
+        body: 'Kur vendosni një porosi, ju merrni një email konfirmimi. Stafi ynë do t\u2019ju kontaktojë për të diskutuar detajet e pagesës dhe dorëzimit.\n\nPagesa bëhet me transfertë bankare ose me para në dorëzim. Nuk pranohen pagesa me kartë përmes faqes.',
       },
       {
         title: '4. Dorëzimi',
@@ -72,7 +72,7 @@ export default function TermsPage() {
       },
       {
         title: '3. Ordering and Payment',
-        body: 'When you place an order, you receive a confirmation email. Our staff will contact you to discuss payment and delivery details.\n\n[[INSERT ACCURATE PAYMENT METHODS — e.g. bank transfer, in-boutique payment, COD for Kosovo]]',
+        body: 'When you place an order, you receive a confirmation email. Our staff will contact you to discuss payment and delivery details.\n\nPayment is by bank transfer or cash on delivery. Card payments are not taken through this website.',
       },
       {
         title: '4. Delivery',

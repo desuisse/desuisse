@@ -7,7 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useCart } from '@/lib/CartContext';
-import { sanitizeText, sanitizeEmail, sanitizePhone, isValidCardNumber, isValidExpiry, isValidCVV, LIMITS } from '@/lib/security';
+import { sanitizeText, sanitizeEmail, sanitizePhone, LIMITS } from '@/lib/security';
 
 type Step = 'info' | 'shipping' | 'payment' | 'confirm';
 
@@ -21,10 +21,9 @@ export default function CheckoutPage() {
 
   const [info, setInfo] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [shipping, setShipping] = useState({ address: '', city: '', zip: '', country: '', method: 'standard' });
-  // NOTE: Card data is held in state for display only.
-  // In production, replace card fields with Stripe Elements (<CardElement>).
-  // Raw card data should NEVER be sent to your own server.
-  const [payment, setPayment] = useState({ method: 'card', cardName: '', cardNumber: '', expiry: '', cvv: '' });
+  // deSuisse settles by bank transfer or cash on delivery, so the checkout
+  // never handles card data — there is no card form to leak or mis-handle.
+  const [payment, setPayment] = useState({ method: 'transfer' });
 
   const t = {
     title: language === 'sq' ? 'Arkëtimi' : 'Checkout',
@@ -49,12 +48,11 @@ export default function CheckoutPage() {
     standard: language === 'sq' ? 'Standard (5–10 ditë pune) — Falas' : 'Standard (5–10 business days) — Free',
     express: language === 'sq' ? 'Express (2–3 ditë pune) — 9.99€' : 'Express (2–3 business days) — 9.99€',
     paymentMethod: language === 'sq' ? 'Metoda e Pagesës' : 'Payment Method',
-    card: language === 'sq' ? 'Kartë Krediti / Debiti' : 'Credit / Debit Card',
     transfer: language === 'sq' ? 'Transfertë Bankare' : 'Bank Transfer',
-    cardName: language === 'sq' ? 'Emri në Kartë' : 'Name on Card',
-    cardNumber: language === 'sq' ? 'Numri i Kartës' : 'Card Number',
-    expiry: language === 'sq' ? 'Data e Skadimit' : 'Expiry Date',
-    cvv: 'CVV',
+    cash: language === 'sq' ? 'Para në dorëzim' : 'Cash on Delivery',
+    cashNote: language === 'sq'
+      ? 'Paguani në dorë kur ta merrni porosinë. Stafi ynë ju kontakton për të konfirmuar dorëzimin.'
+      : 'Pay in cash when your order arrives. Our staff will contact you to confirm delivery.',
     reviewTitle: language === 'sq' ? 'Shqyrto Porosinë' : 'Review Your Order',
     infoLabel: language === 'sq' ? 'Informacioni Personal' : 'Personal Info',
     shippingLabel: language === 'sq' ? 'Adresa e Dërgimit' : 'Shipping Address',
@@ -251,37 +249,14 @@ export default function CheckoutPage() {
               <div style={{ marginBottom: 24 }}>
                 <label style={labelStyle}>{t.paymentMethod}</label>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  {(['card', 'transfer'] as const).map(m => (
+                  {(['transfer', 'cash'] as const).map(m => (
                     <label key={m} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', border: `1px solid ${payment.method === m ? '#c9a84c' : '#e8e0d4'}`, cursor: 'pointer', transition: 'border-color 0.2s', background: payment.method === m ? '#fdf9f0' : '#fff' }}>
                       <input type="radio" name="paymentMethod" value={m} checked={payment.method === m} onChange={() => setPayment({ ...payment, method: m })} style={{ accentColor: '#c9a84c' }} />
-                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#444' }}>{m === 'card' ? t.card : t.transfer}</span>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#444' }}>{m === 'transfer' ? t.transfer : t.cash}</span>
                     </label>
                   ))}
                 </div>
               </div>
-
-              {payment.method === 'card' && (
-                <>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={labelStyle}>{t.cardName} *</label>
-                    <input style={inputStyle} value={payment.cardName} onChange={e => setPayment({ ...payment, cardName: e.target.value })} onFocus={onFocus} onBlur={onBlur} placeholder="Jane Smith" />
-                  </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={labelStyle}>{t.cardNumber} *</label>
-                    <input style={inputStyle} value={payment.cardNumber} onChange={e => setPayment({ ...payment, cardNumber: e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim().slice(0, 19) })} onFocus={onFocus} onBlur={onBlur} placeholder="1234 5678 9012 3456" maxLength={19} />
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 32 }}>
-                    <div>
-                      <label style={labelStyle}>{t.expiry} *</label>
-                      <input style={inputStyle} value={payment.expiry} onChange={e => setPayment({ ...payment, expiry: e.target.value.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1/$2').slice(0, 5) })} onFocus={onFocus} onBlur={onBlur} placeholder="MM/YY" maxLength={5} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>{t.cvv} *</label>
-                      <input style={inputStyle} value={payment.cvv} onChange={e => setPayment({ ...payment, cvv: e.target.value.replace(/\D/g, '').slice(0, 4) })} onFocus={onFocus} onBlur={onBlur} placeholder="123" maxLength={4} type="password" />
-                    </div>
-                  </div>
-                </>
-              )}
 
               {payment.method === 'transfer' && (
                 <div style={{ background: '#f7f3ee', padding: '20px', border: '1px solid #e8e0d4', marginBottom: 32 }}>
@@ -294,15 +269,18 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {payment.method === 'cash' && (
+                <div style={{ background: '#f7f3ee', padding: '20px', border: '1px solid #e8e0d4', marginBottom: 32 }}>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#666', lineHeight: 1.9 }}>
+                    {t.cashNote}
+                  </p>
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 12 }}>
                 <button onClick={() => setStep('shipping')} style={{ padding: '14px 28px', background: 'transparent', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', color: '#888' }}>← {t.back}</button>
                 <button className="btn-dark" onClick={() => {
                   setStepError('');
-                  if (payment.method === 'card') {
-                    if (!isValidCardNumber(payment.cardNumber)) { setStepError(language === 'sq' ? 'Numri i kartës është i pavlefshëm.' : 'Invalid card number.'); return; }
-                    if (!isValidExpiry(payment.expiry)) { setStepError(language === 'sq' ? 'Data e skadimit është e pavlefshme.' : 'Invalid or expired card.'); return; }
-                    if (!isValidCVV(payment.cvv)) { setStepError(language === 'sq' ? 'CVV i pavlefshëm.' : 'Invalid CVV.'); return; }
-                  }
                   setStep('confirm');
                 }} style={{ minWidth: 180, textAlign: 'center' }}>{t.next} →</button>
               </div>
@@ -317,7 +295,7 @@ export default function CheckoutPage() {
               {[
                 { label: t.infoLabel, lines: [`${info.firstName} ${info.lastName}`, info.email, info.phone].filter(Boolean), editStep: 'info' as Step },
                 { label: t.shippingLabel, lines: [shipping.address, `${shipping.city} ${shipping.zip}`, shipping.country, shipping.method === 'express' ? (language === 'sq' ? 'Express' : 'Express') : (language === 'sq' ? 'Standard' : 'Standard')].filter(Boolean), editStep: 'shipping' as Step },
-                { label: t.paymentLabel, lines: [payment.method === 'card' ? `${t.card} ****${payment.cardNumber.slice(-4)}` : t.transfer].filter(Boolean), editStep: 'payment' as Step },
+                { label: t.paymentLabel, lines: [payment.method === 'transfer' ? t.transfer : t.cash].filter(Boolean), editStep: 'payment' as Step },
               ].map(section => (
                 <div key={section.label} style={{ border: '1px solid #e8e0d4', padding: '20px 24px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
@@ -346,7 +324,6 @@ export default function CheckoutPage() {
                         zip: shipping.zip,
                         country: shipping.country,
                         shippingMethod: shipping.method,
-                        // NOTE: paymentMethod only — card number is NOT sent
                         paymentMethod: payment.method,
                         // The cart itself. Prices are re-derived server-side
                         // from the catalogue; these are sent only so the server

@@ -108,7 +108,7 @@ const VALID_COUNTRIES = [
 ];
 
 const VALID_SHIPPING = ['standard', 'express'];
-const VALID_PAYMENT  = ['card', 'transfer'];
+const VALID_PAYMENT  = ['transfer', 'cash'];
 
 export async function POST(req: NextRequest) {
   // Reject non-JSON

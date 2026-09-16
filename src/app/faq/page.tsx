@@ -20,7 +20,7 @@ export default function FAQPage() {
     },
     {
       q: 'Cilat mënyra pagese pranoni?',
-      a: '[[VENDOSNI MËNYRAT TUAJA — p.sh.: transfertë bankare, pagesë me kartë në boutique, pagesë në dorëzim (vetëm Kosovë), ose përmes PayPal. Stripe nuk është i disponueshëm në Kosovë, kështu që e bëjmë pagesën përmes metodave alternative.]]',
+      a: 'Pranojmë transfertë bankare dhe pagesë me para në dorëzim. Pas porosisë, stafi ynë ju kontakton për të konfirmuar mënyrën e pagesës dhe dorëzimin. Nuk pranojmë pagesa me kartë online.',
     },
     {
       q: 'Sa zgjat dorëzimi?',
@@ -69,7 +69,7 @@ export default function FAQPage() {
     },
     {
       q: 'What payment methods do you accept?',
-      a: '[[INSERT YOUR METHODS — e.g.: bank transfer, in-boutique card payment, cash on delivery (Kosovo only), or PayPal. Stripe is not available in Kosovo, so we handle payment through alternative methods.]]',
+      a: 'We accept bank transfer and cash on delivery. After you order, our staff contact you to confirm the payment method and the delivery. We do not take card payments online.',
     },
     {
       q: 'How long does delivery take?',
