@@ -97,85 +97,31 @@ function Carousel({ items, renderItem, visibleCount = 3 }: {
   );
 }
 
-// ── Category Carousel ─────────────────────────────────────────
-function CategoryCarousel({ categories }: { categories: { key: string; label: string; img: string; href: string }[] }) {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(3);
-
-  useEffect(() => {
-    const update = () => {
-      if (window.innerWidth < 480) setVisible(1);
-      else if (window.innerWidth < 768) setVisible(2);
-      else setVisible(3);
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
-  const max = Math.max(0, categories.length - visible);
-  const safeIndex = Math.min(index, max);
-
-  const prev = () => setIndex(i => Math.max(0, i - 1));
-  const next = () => setIndex(i => Math.min(max, i + 1));
-
-  const ArrowBtn = ({ dir, onClick, disabled }: { dir: 'left' | 'right'; onClick: () => void; disabled: boolean }) => (
-    <button onClick={onClick} disabled={disabled} style={{
-      width: 44, height: 44, borderRadius: '50%',
-      border: `1px solid ${disabled ? '#e8e0d4' : '#1a0a0a'}`,
-      background: disabled ? '#f7f3ee' : '#fff',
-      color: disabled ? '#ccc' : '#1a0a0a',
-      cursor: disabled ? 'default' : 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      transition: 'all 0.2s', flexShrink: 0,
-    }}
-      onMouseEnter={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.background = '#1a0a0a'; b.style.color = '#fff'; b.style.borderColor = '#1a0a0a'; } }}
-      onMouseLeave={e => { if (!disabled) { const b = e.currentTarget as HTMLButtonElement; b.style.background = '#fff'; b.style.color = '#1a0a0a'; b.style.borderColor = '#e8e0d4'; } }}
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        {dir === 'left' ? <path d="M15 18l-6-6 6-6"/> : <path d="M9 18l6-6-6-6"/>}
-      </svg>
-    </button>
-  );
-
+// ── Category Banners ──────────────────────────────────────────
+// The category art is shot as a wide banner: jewellery on the left, empty
+// ground on the right for its name. Squeezing that into a portrait card
+// threw away the composition, so each category gets a full-width row and
+// the name is set as real text in the space the photograph left for it —
+// which also keeps it switching with ALB/EN.
+function CategoryBanners({ categories }: { categories: { key: string; label: string; img: string; href: string }[] }) {
   return (
-    <div>
-      {max > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
-          <ArrowBtn dir="left" onClick={prev} disabled={safeIndex === 0} />
-          <ArrowBtn dir="right" onClick={next} disabled={safeIndex >= max} />
-        </div>
-      )}
-      <div style={{ overflow: 'hidden' }}>
-        <div style={{
-          display: 'flex',
-          gap: 16,
-          transform: `translateX(calc(-${safeIndex} * (${100 / visible}% + ${16 / visible}px)))`,
-          transition: 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        }}>
-          {categories.map((cat) => (
-            <Link key={cat.key} href={cat.href} className="cat-card" style={{
-              display: 'block', textDecoration: 'none', position: 'relative', flexShrink: 0,
-              width: `calc(${100 / visible}% - ${(visible - 1) * 16 / visible}px)`,
-            }}>
-              <div style={{ overflow: 'hidden', position: 'relative', aspectRatio: '430/538', background: '#f7f3ee' }}>
-                {/* Native img tag — bypasses Next.js image proxy, works on all mobile browsers */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={cat.img} alt={cat.label} loading="lazy"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)' }}
-                  className="cat-img"
-                />
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,10,10,0)', transition: 'background 0.4s' }} className="cat-overlay" />
-              </div>
-              <div style={{ padding: '12px 0 6px', textAlign: 'center' }}>
-                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 400, color: '#1a0a0a', letterSpacing: '0.04em' }}>
-                  {cat.label}
-                </h3>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
+    <div className="cat-banners">
+      {categories.map((cat, i) => (
+        <Reveal key={cat.key} delay={i * 90}>
+          <Link href={cat.href} className="cat-banner">
+            <div className="cat-banner-media">
+              <img src={cat.img} alt={cat.label} loading={i === 0 ? 'eager' : 'lazy'} className="cat-banner-img" />
+            </div>
+            <div className="cat-banner-label">
+              <span className="cat-banner-name">{cat.label}</span>
+              <span className="cat-banner-rule" />
+            </div>
+            <span className="cat-banner-chevron" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="m9 18 6-6-6-6"/></svg>
+            </span>
+          </Link>
+        </Reveal>
+      ))}
     </div>
   );
 }
@@ -386,16 +332,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CATEGORIES CAROUSEL ── */}
-      <section style={{ padding: '100px 60px', maxWidth: 1400, margin: '0 auto' }} className="home-section-pad">
+      {/* ── CATEGORY BANNERS ── */}
+      <section style={{ padding: '100px 40px', maxWidth: 1500, margin: '0 auto' }} className="home-section-pad">
         <Reveal>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, letterSpacing: '0.4em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 12 }}>✦ Collections</p>
             <h2 className="section-title">{t.home.categoriesTitle}</h2>
             <p className="section-subtitle" style={{ marginTop: 14, maxWidth: 500, margin: '14px auto 0' }}>{t.home.categoriesSubtitle}</p>
           </div>
         </Reveal>
-        <CategoryCarousel categories={categories} />
+        <CategoryBanners categories={categories} />
         <Reveal delay={200}>
           <div style={{ textAlign: 'center', marginTop: 48 }}>
             <Link href="/shop" className="btn-dark">{t.home.browsAll}</Link>

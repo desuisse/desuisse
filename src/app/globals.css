@@ -1808,3 +1808,115 @@ button, a {
   }
   .home-hero-btn-solid { background: var(--ds-burgundy); justify-content: center; }
 }
+
+
+/* ── Category banners ─────────────────────────────────────────
+   Three full-width rows. The artwork is a wide frame with the piece on the
+   left and deliberately empty ground on the right, so the name sits in that
+   ground as live text rather than being baked into the picture — one file
+   serves both languages and stays sharp on any display. */
+.cat-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cat-banner {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  text-decoration: none;
+  background: var(--ds-cream);
+  border: 1px solid var(--ds-line-soft);
+}
+
+.cat-banner-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 350;
+  overflow: hidden;
+}
+
+.cat-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The jewellery sits left of centre; hold it there when the frame is
+     cropped rather than letting it drift out of shot. */
+  object-position: 30% 50%;
+  display: block;
+  transition: transform 0.8s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.cat-banner:hover .cat-banner-img { transform: scale(1.03); }
+
+.cat-banner-label {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 56%;
+  right: 12%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.cat-banner-name {
+  font-family: var(--font-serif);
+  font-size: clamp(20px, 2.6vw, 44px);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4a1420;
+  line-height: 1.1;
+}
+
+.cat-banner-rule {
+  width: clamp(70px, 9vw, 150px);
+  height: 1px;
+  background: var(--ds-gold);
+  transition: width 0.5s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.cat-banner:hover .cat-banner-rule { width: clamp(100px, 12vw, 200px); }
+
+.cat-banner-chevron {
+  position: absolute;
+  top: 50%;
+  right: clamp(16px, 3.5%, 46px);
+  transform: translateY(-50%);
+  display: flex;
+  color: #4a1420;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+
+.cat-banner:hover .cat-banner-chevron { transform: translateY(-50%) translateX(6px); }
+
+@media (max-width: 899px) {
+  .cat-banner-media { aspect-ratio: 1000 / 460; }
+  .cat-banner-label { left: 52%; gap: 12px; }
+}
+
+/* On a phone the empty right-hand ground is wasted space: crop to the piece
+   and set the name beneath it, where it can be read at a sensible size. */
+@media (max-width: 599px) {
+  .cat-banners { gap: 14px; }
+  .cat-banner-media { aspect-ratio: 3 / 2; }
+  .cat-banner-img { object-position: 32% 50%; }
+  .cat-banner-label {
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 44px 16px 18px;
+  }
+  .cat-banner-name { font-size: 17px; letter-spacing: 0.1em; }
+  .cat-banner-rule { width: 40px; flex-shrink: 0; }
+  .cat-banner:hover .cat-banner-rule { width: 40px; }
+  .cat-banner-chevron { top: auto; bottom: 20px; transform: none; }
+  .cat-banner:hover .cat-banner-chevron { transform: translateX(4px); }
+}
