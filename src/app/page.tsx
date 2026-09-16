@@ -111,6 +111,7 @@ function CategoryBanners({ categories }: { categories: { key: string; label: str
           <Link href={cat.href} className="cat-banner">
             <div className="cat-banner-media">
               <img src={cat.img} alt={cat.label} loading={i === 0 ? 'eager' : 'lazy'} className="cat-banner-img" />
+              <span className="cat-banner-scrim" />
             </div>
             <div className="cat-banner-label">
               <span className="cat-banner-name">{cat.label}</span>

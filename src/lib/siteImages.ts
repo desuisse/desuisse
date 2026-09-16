@@ -1,3 +1,8 @@
+/**
+ * NOTE: /images/* is served with `max-age=31536000, immutable` (next.config.js),
+ * so a filename is a permanent contract. To change a picture, ship a NEW name —
+ * overwriting one leaves every visitor who already loaded it on the old file.
+ */
 export interface SiteImages {
   hero: string;
   catEveryday: string;
@@ -14,12 +19,12 @@ export interface SiteImages {
 export const DEFAULT_SITE_IMAGES: SiteImages = {
   hero: '/images/hero-elegance.webp',
   catEveryday:       '/images/cat-everyday.jpg',
-  catEngagement:     '/images/cat-engagement-new.webp',
-  catWedding:        '/images/cat-wedding-new.webp',
+  catEngagement:     '/images/cat-engagement-wide.webp',
+  catWedding:        '/images/cat-wedding-wide.webp',
   catEarrings:       '/images/cat-earrings.jpg',
   catBracelets:      '/images/cat-bracelets.jpg',
   catNecklaces:      '/images/cat-necklaces.jpg',
-  catJewellery:      '/images/cat-jewellery.webp',
+  catJewellery:      '/images/cat-jewellery-wide.webp',
   collectionClassic: '/images/collection-classic.jpg',
   collectionParker:  '/images/collection-parker.jpg',
 };

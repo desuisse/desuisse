@@ -1854,6 +1854,20 @@ button, a {
 
 .cat-banner:hover .cat-banner-img { transform: scale(1.03); }
 
+/* The artwork leaves its right-hand side empty for the name, but an admin can
+   swap in any photo — so the name gets its own soft ground rather than relying
+   on the picture to be quiet there. */
+.cat-banner-scrim {
+  position: absolute;
+  inset: 0 0 0 38%;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(250, 247, 243, 0) 0%,
+    rgba(250, 247, 243, 0.72) 26%,
+    rgba(250, 247, 243, 0.94) 52%,
+    rgba(250, 247, 243, 0.97) 100%);
+}
+
 .cat-banner-label {
   position: absolute;
   top: 0;
@@ -1909,6 +1923,7 @@ button, a {
    and set the name beneath it, where it can be read at a sensible size. */
 @media (max-width: 599px) {
   .cat-banners { grid-template-columns: 1fr; gap: 14px; }
+  .cat-banner-scrim { display: none; }
   .cat-banner-media { aspect-ratio: 3 / 2; }
   .cat-banner-img { object-position: 32% 50%; }
   .cat-banner-label {
