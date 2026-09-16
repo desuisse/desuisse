@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -72,13 +73,18 @@ export default function RingStoryPage() {
       <Header />
 
       {/* Hero — photos + intro text */}
-      <section style={{ position: 'relative', minHeight: '70vh', display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
+      <section className="rs-hero" style={{ position: 'relative', minHeight: '70vh', display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
         {/* Photos left side */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 4, background: '#1a0a0a' }}>
+        <div className="rs-hero-photos" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 4, background: '#1a0a0a' }}>
           {[1,2,3,4].map(n => (
-            <div key={n} style={{ background: '#2a1a1a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 200 }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#555', textAlign: 'center' }}>public/images/story-{n}.jpg</p>
+            <div key={n} style={{ position: 'relative', background: '#2a1a1a', minHeight: 200, overflow: 'hidden' }}>
+              <Image
+                src={`/images/story-${n}.webp`}
+                alt={language === 'sq' ? 'Procesi i krijimit të unazës' : 'The ring-making process'}
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                style={{ objectFit: 'cover' }}
+              />
             </div>
           ))}
         </div>
@@ -103,7 +109,7 @@ export default function RingStoryPage() {
 
       {/* Step navigation bar */}
       <div style={{ background: '#fff', borderTop: '1px solid #e8e0d4', borderBottom: '1px solid #e8e0d4', position: 'sticky', top: 73, zIndex: 50 }}>
-        <div style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
+        <div className="rs-steps-nav" style={{ maxWidth: 1300, margin: '0 auto', display: 'flex', justifyContent: 'center' }}>
           {t.steps.map((step, i) => (
             <div key={step.key} style={{ display: 'flex', alignItems: 'center' }}>
               <button onClick={() => scrollTo(step.key as keyof typeof sectionRefs)} style={{
@@ -125,12 +131,17 @@ export default function RingStoryPage() {
       {/* Step sections */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 40px 80px' }}>
         {t.steps.map((step, i) => (
-          <div key={step.key} ref={sectionRefs[step.key as keyof typeof sectionRefs]} style={{ paddingTop: 80, display: 'grid', gridTemplateColumns: i % 2 === 0 ? '1fr 1fr' : '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          <div key={step.key} ref={sectionRefs[step.key as keyof typeof sectionRefs]} className="rs-step" style={{ paddingTop: 80, display: 'grid', gridTemplateColumns: i % 2 === 0 ? '1fr 1fr' : '1fr 1fr', gap: 64, alignItems: 'center' }}>
             {/* Photo (alternates sides) */}
             {i % 2 !== 0 && (
-              <div style={{ background: '#f7f3ee', border: '1px dashed #e8e0d4', aspectRatio: '4/3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#ccc' }}>public/images/story-{step.key}.jpg</p>
+              <div style={{ position: 'relative', background: '#f7f3ee', aspectRatio: '4/3', overflow: 'hidden' }}>
+                <Image
+                  src={`/images/story-${step.key}.webp`}
+                  alt={step.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  style={{ objectFit: 'cover' }}
+                />
               </div>
             )}
             <div>
@@ -141,9 +152,14 @@ export default function RingStoryPage() {
             </div>
             {/* Photo (even steps) */}
             {i % 2 === 0 && (
-              <div style={{ background: '#f7f3ee', border: '1px dashed #e8e0d4', aspectRatio: '4/3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#ccc' }}>public/images/story-{step.key}.jpg</p>
+              <div style={{ position: 'relative', background: '#f7f3ee', aspectRatio: '4/3', overflow: 'hidden' }}>
+                <Image
+                  src={`/images/story-${step.key}.webp`}
+                  alt={step.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  style={{ objectFit: 'cover' }}
+                />
               </div>
             )}
           </div>
@@ -154,8 +170,23 @@ export default function RingStoryPage() {
 
       <style>{`
         @media (max-width: 768px) {
-          section[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
-          div[style*="grid-template-columns: 1fr 1fr"][style*="gap: 64px"] { grid-template-columns: 1fr !important; gap: 32px !important; }
+          /* These used to be attribute selectors matching inline styles
+             ([style*="grid-template-columns: 1fr 1fr"]). React serialises
+             that declaration without the space after the colon, so the rules
+             silently never matched and this page stayed two-column on a
+             phone — headline and buttons cut off at the edge. */
+          .rs-hero { grid-template-columns: 1fr !important; min-height: 0 !important; }
+          .rs-hero-photos { grid-template-rows: 1fr 1fr !important; }
+          .rs-hero-photos > div { min-height: 130px !important; }
+          .rs-hero > div:last-child { padding: 44px 24px !important; }
+
+          .rs-step { grid-template-columns: 1fr !important; gap: 28px !important; padding-top: 56px !important; }
+
+          /* Five labels never fit one phone row; wrap them and drop the
+             em-dash separators that only make sense in a single line. */
+          .rs-steps-nav { flex-wrap: wrap !important; gap: 2px 4px; padding: 6px 12px; }
+          .rs-steps-nav button { padding: 12px 14px !important; font-size: 10px !important; letter-spacing: 0.1em !important; }
+          .rs-steps-nav span { display: none !important; }
         }
       `}</style>
     </>
