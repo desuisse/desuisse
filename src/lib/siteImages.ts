@@ -6,18 +6,20 @@ export interface SiteImages {
   catEarrings: string;
   catBracelets: string;
   catNecklaces: string;
+  catJewellery: string;
   collectionClassic: string;
   collectionParker: string;
 }
 
 export const DEFAULT_SITE_IMAGES: SiteImages = {
-  hero: '/images/hero-oval-ring.webp',
+  hero: '/images/hero-elegance.webp',
   catEveryday:       '/images/cat-everyday.jpg',
-  catEngagement:     '/images/cat-engagement.jpg',
-  catWedding:        '/images/cat-wedding.jpg',
+  catEngagement:     '/images/cat-engagement-new.webp',
+  catWedding:        '/images/cat-wedding-new.webp',
   catEarrings:       '/images/cat-earrings.jpg',
   catBracelets:      '/images/cat-bracelets.jpg',
   catNecklaces:      '/images/cat-necklaces.jpg',
+  catJewellery:      '/images/cat-jewellery.webp',
   collectionClassic: '/images/collection-classic.jpg',
   collectionParker:  '/images/collection-parker.jpg',
 };

@@ -73,11 +73,14 @@ function Carousel({ items, renderItem, visibleCount = 3 }: {
 
   return (
     <div style={{ position: 'relative' }}>
-      {/* Arrow row */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
-        <ArrowBtn dir="left" onClick={prev} disabled={index === 0} />
-        <ArrowBtn dir="right" onClick={next} disabled={index >= max} />
-      </div>
+      {/* Arrow row — hidden when every card is already on screen, so three
+          categories on a desktop don't sit under two dead buttons. */}
+      {max > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
+          <ArrowBtn dir="left" onClick={prev} disabled={index === 0} />
+          <ArrowBtn dir="right" onClick={next} disabled={index >= max} />
+        </div>
+      )}
       {/* Slide container */}
       <div style={{ overflow: 'hidden' }}>
         <div style={{
@@ -137,10 +140,12 @@ function CategoryCarousel({ categories }: { categories: { key: string; label: st
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
-        <ArrowBtn dir="left" onClick={prev} disabled={safeIndex === 0} />
-        <ArrowBtn dir="right" onClick={next} disabled={safeIndex >= max} />
-      </div>
+      {max > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
+          <ArrowBtn dir="left" onClick={prev} disabled={safeIndex === 0} />
+          <ArrowBtn dir="right" onClick={next} disabled={safeIndex >= max} />
+        </div>
+      )}
       <div style={{ overflow: 'hidden' }}>
         <div style={{
           display: 'flex',
@@ -325,14 +330,14 @@ export default function HomePage() {
     }).catch(() => {});
   }, []);
 
+  // Three doors instead of six. Anything that is not an engagement or wedding
+  // ring lives under Jewellery, which /shop resolves as "everything else".
   const categories = [
-    { key: 'everyday-rings',   label: language === 'sq' ? 'Unaza të Përditshme' : 'Everyday Rings',   img: siteImages.catEveryday,   href: '/shop?category=everyday-rings' },
-    { key: 'engagement-rings', label: language === 'sq' ? 'Unaza Fejese' : 'Engagement Rings',         img: siteImages.catEngagement, href: '/shop?category=engagement-rings' },
-    { key: 'wedding-rings',    label: language === 'sq' ? 'Unaza Martese' : 'Wedding Rings',           img: siteImages.catWedding,    href: '/shop?category=wedding-rings' },
-    { key: 'earrings',         label: language === 'sq' ? 'Vathë' : 'Earrings',                       img: siteImages.catEarrings,   href: '/shop?category=earrings' },
-    { key: 'bracelets',        label: language === 'sq' ? 'Byzylykë' : 'Bracelets',                   img: siteImages.catBracelets,  href: '/shop?category=bracelets' },
-    { key: 'necklaces',        label: language === 'sq' ? 'Qafore' : 'Necklaces',                     img: siteImages.catNecklaces,  href: '/shop?category=necklaces' },
+    { key: 'engagement-rings', label: language === 'sq' ? 'Unaza Fejese' : 'Engagement Rings', img: siteImages.catEngagement, href: '/shop?category=engagement-rings' },
+    { key: 'wedding-rings',    label: language === 'sq' ? 'Unaza Martese' : 'Wedding Rings',   img: siteImages.catWedding,    href: '/shop?category=wedding-rings' },
+    { key: 'jewellery',        label: language === 'sq' ? 'Bizhuteri' : 'Jewellery',           img: siteImages.catJewellery,  href: '/shop?category=jewellery' },
   ];
+
 
   return (
     <>
@@ -366,12 +371,16 @@ export default function HomePage() {
 
         <div className="home-hero-inner">
           <div className="home-hero-copy">
-            <h1 className="home-hero-title fade-up">{t.hero.title}</h1>
+            <h1 className="home-hero-title fade-up">
+              <span className="home-hero-accent">{t.hero.titleAccent}</span> {t.hero.title}
+            </h1>
             <div className="home-hero-rule fade-up fade-up-delay-1" />
             <p className="home-hero-sub fade-up fade-up-delay-1">{t.hero.subtitle}</p>
             <div className="home-hero-actions fade-up fade-up-delay-2">
-              <Link href="/shop" className="home-hero-btn">{t.hero.ctaPrimary}</Link>
-              <Link href="/custom-design" className="home-hero-btn">{t.hero.ctaSecondary}</Link>
+              <Link href="/shop" className="home-hero-btn home-hero-btn-solid">
+                {t.hero.ctaPrimary}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+              </Link>
             </div>
           </div>
         </div>

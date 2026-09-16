@@ -64,7 +64,13 @@ export default function ShopContent() {
 
   const filtered = useMemo(() => {
     let result = products.filter(p => {
-      const matchCat = activeCategory === 'all' || p.category === activeCategory;
+      // 'jewellery' is not a stored category — it is the catch-all the
+      // homepage links to: anything that is not a bridal ring.
+      const matchCat =
+        activeCategory === 'all' ? true
+        : activeCategory === 'jewellery'
+          ? p.category !== 'engagement-rings' && p.category !== 'wedding-rings'
+          : p.category === activeCategory;
       const matchMat = activeMaterials.length === 0 || (p.materials && p.materials.some(m => activeMaterials.includes(m)));
       const matchPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
       return matchCat && matchMat && matchPrice;

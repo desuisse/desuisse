@@ -967,6 +967,7 @@ export default function AdminPage() {
               { key: 'catEarrings',       label: 'Category: Earrings',                           note: 'Recommended: portrait, min 430×538' },
               { key: 'catBracelets',      label: 'Category: Bracelets',                          note: 'Recommended: portrait, min 430×538' },
               { key: 'catNecklaces',      label: 'Category: Necklaces',                          note: 'Recommended: portrait, min 430×538' },
+              { key: 'catJewellery',     label: 'Category: Jewellery (homepage)',               note: 'Recommended: portrait, min 430×538' },
               { key: 'collectionClassic', label: 'Featured Collection: Left (e.g. The Classics)', note: 'Recommended: landscape, min 800×500' },
               { key: 'collectionParker',  label: 'Featured Collection: Right (e.g. Parker)',     note: 'Recommended: landscape, min 800×500' },
             ].map(field => (

@@ -1684,12 +1684,17 @@ button, a {
 
 .home-hero-title {
   font-family: var(--font-serif);
-  font-weight: 300;
-  font-size: clamp(28px, 3.4vw, 46px);
-  line-height: 1.16;
-  letter-spacing: 0.12em;
+  font-weight: 400;
+  /* Mixed case, so the wide tracking that suited an all-caps headline would
+     now just look loose. */
+  font-size: clamp(30px, 3.9vw, 54px);
+  line-height: 1.14;
+  letter-spacing: 0.01em;
   color: var(--ds-dark);
 }
+
+/* The opening word carries the brand burgundy, the rest stays ink */
+.home-hero-accent { color: var(--ds-burgundy); }
 
 .home-hero-rule {
   width: 68px;
@@ -1744,6 +1749,25 @@ button, a {
   outline-offset: 3px;
 }
 
+
+/* Primary call to action: solid burgundy, white label. Used where the hero
+   leads with a single action rather than a pair of outlined choices. */
+.home-hero-btn-solid {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ds-burgundy);
+  border-color: var(--ds-burgundy);
+  color: #fff;
+  letter-spacing: 0.18em;
+}
+
+.home-hero-btn-solid:hover {
+  background: var(--ds-dark);
+  border-color: var(--ds-dark);
+  color: #fff;
+}
+
 @media (max-width: 899px) {
   /* Phones keep the copy ON the photograph rather than stacked beneath it.
      That needs three things working together: a tall enough frame that the
@@ -1782,4 +1806,5 @@ button, a {
     /* Slightly opaque so the label never sits directly on photo detail */
     background: rgba(255, 255, 255, 0.72);
   }
+  .home-hero-btn-solid { background: var(--ds-burgundy); justify-content: center; }
 }

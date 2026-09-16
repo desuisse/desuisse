@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     catEarrings:       sanitizeImageUrl(String(b.catEarrings || '')),
     catBracelets:      sanitizeImageUrl(String(b.catBracelets || '')),
     catNecklaces:      sanitizeImageUrl(String(b.catNecklaces || '')),
+    catJewellery:      sanitizeImageUrl(String(b.catJewellery || '')),
     collectionClassic: sanitizeImageUrl(String(b.collectionClassic || '')),
     collectionParker:  sanitizeImageUrl(String(b.collectionParker || '')),
   };
