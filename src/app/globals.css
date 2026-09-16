@@ -2033,3 +2033,240 @@ button, a {
      "SHFLETO TË GJITHA" hard to read. */
   .btn-gold, .btn-dark { padding: 14px 22px !important; font-size: 12px !important; }
 }
+
+
+/* ── Free engraving ───────────────────────────────────────────────
+   Built around a live preview of the customer's own words on a band,
+   because "up to 30 characters" means nothing until you see it. */
+.fe-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  background: var(--ds-cream);
+  border-bottom: 1px solid var(--ds-line);
+}
+
+.fe-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(48px, 6vw, 96px) clamp(24px, 5vw, 80px);
+}
+
+.fe-hero-media { position: relative; min-height: 380px; }
+
+.fe-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--ds-gold);
+  margin-bottom: 16px;
+}
+
+.fe-title {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+  line-height: 1.1;
+  color: var(--ds-dark);
+}
+
+.fe-rule { width: 44px; height: 1px; background: var(--ds-gold); margin: 22px 0; }
+.fe-rule-center { margin-left: auto; margin-right: auto; }
+
+.fe-lead {
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1.1vw, 15px);
+  line-height: 1.95;
+  color: #574c42;
+  max-width: 46ch;
+}
+
+.fe-free {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(17px, 1.6vw, 22px);
+  color: var(--ds-burgundy);
+  margin-top: 14px;
+}
+
+.fe-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 32px; }
+.fe-actions-end { margin-top: 30px; }
+
+.fe-link-btn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ds-line);
+  padding-bottom: 4px;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+.fe-link-btn:hover { color: var(--ds-dark); border-color: var(--ds-gold); }
+
+/* ── Preview ── */
+.fe-try { background: #fff; padding: clamp(56px, 7vw, 100px) 24px; }
+.fe-try-inner { max-width: 760px; margin: 0 auto; text-align: center; }
+
+.fe-h2 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  color: var(--ds-dark);
+}
+.fe-h2-center { text-align: center; }
+
+.fe-sub {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--ds-muted-soft);
+  max-width: 52ch;
+  margin: 0 auto 40px;
+}
+
+/* The band: a strip of gold read as the inside of a ring. */
+.fe-band {
+  position: relative;
+  border-radius: 999px;
+  padding: 5px;
+  background: linear-gradient(180deg, #f0dba6 0%, #cfa94f 22%, #a9832f 52%, #e6cf95 78%, #b8913a 100%);
+  box-shadow: 0 14px 30px rgba(120, 90, 20, 0.16);
+}
+
+.fe-band-inner {
+  border-radius: 999px;
+  padding: clamp(22px, 4vw, 34px) clamp(20px, 5vw, 48px);
+  background: linear-gradient(180deg, #b98f34 0%, #e7cd8d 26%, #f6e7bd 50%, #dcbb69 74%, #a87f28 100%);
+  box-shadow: inset 0 2px 6px rgba(90, 65, 10, 0.35), inset 0 -2px 6px rgba(255, 250, 230, 0.5);
+  overflow: hidden;
+}
+
+/* Incised, not printed: a light edge under the glyphs and a dark one above. */
+.fe-band-text {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: clamp(19px, 3.4vw, 32px);
+  letter-spacing: 0.1em;
+  color: #6f5316;
+  text-shadow: 0 1px 0 rgba(255, 249, 226, 0.75), 0 -1px 1px rgba(60, 42, 5, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fe-controls {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 26px;
+  margin-top: 36px;
+  text-align: left;
+}
+
+.fe-field { display: block; }
+
+.fe-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ds-muted-soft);
+  margin-bottom: 10px;
+}
+
+.fe-count { font-variant-numeric: tabular-nums; letter-spacing: 0.08em; }
+
+.fe-input { width: 100%; font-family: var(--font-serif) !important; font-size: 17px !important; }
+
+.fe-symbols { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.fe-symbol {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--ds-line);
+  background: #fff;
+  color: var(--ds-dark);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.fe-symbol-none {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ds-muted);
+}
+.fe-symbol:hover { border-color: var(--ds-gold); }
+.fe-symbol.is-on { background: var(--ds-dark); border-color: var(--ds-dark); color: #fff; }
+
+/* ── Steps ── */
+.fe-steps { background: var(--ds-cream); padding: clamp(56px, 7vw, 96px) 24px; text-align: center; }
+.fe-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: clamp(24px, 4vw, 56px);
+  max-width: 1040px;
+  margin: 44px auto 0;
+  text-align: left;
+}
+.fe-step { border-top: 1px solid var(--ds-line); padding-top: 22px; }
+.fe-step-n {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--ds-gold);
+}
+.fe-step-t {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 1.35rem;
+  color: var(--ds-dark);
+  margin: 12px 0 8px;
+}
+.fe-step-d { font-family: var(--font-sans); font-size: 13px; line-height: 1.85; color: var(--ds-muted); }
+
+/* ── Details ── */
+.fe-facts { background: #fff; padding: clamp(56px, 7vw, 96px) 24px clamp(64px, 8vw, 110px); }
+.fe-facts-inner { max-width: 760px; margin: 0 auto; }
+.fe-fact-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.fe-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.8;
+  color: #574c42;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--ds-line-soft);
+}
+.fe-fact svg { color: var(--ds-gold); flex-shrink: 0; margin-top: 4px; }
+
+@media (max-width: 900px) {
+  .fe-hero { grid-template-columns: 1fr; }
+  /* Photo first on a phone: it says what the page is faster than the words */
+  .fe-hero-media { order: -1; min-height: 240px; aspect-ratio: 16 / 10; }
+  .fe-lead { max-width: none; }
+  .fe-actions { gap: 14px; }
+  .fe-actions .btn-dark { flex: 1 1 100%; text-align: center; }
+}
+
+@media (max-width: 599px) {
+  .fe-band-inner { padding: 20px 16px; }
+  .fe-band-text { font-size: 17px; letter-spacing: 0.06em; }
+  .fe-step { padding-top: 18px; }
+}
