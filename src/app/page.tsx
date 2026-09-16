@@ -117,7 +117,7 @@ function CategoryBanners({ categories }: { categories: { key: string; label: str
               <span className="cat-banner-rule" />
             </div>
             <span className="cat-banner-chevron" aria-hidden="true">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="m9 18 6-6-6-6"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m9 18 6-6-6-6"/></svg>
             </span>
           </Link>
         </Reveal>

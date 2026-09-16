@@ -1815,10 +1815,14 @@ button, a {
    left and deliberately empty ground on the right, so the name sits in that
    ground as live text rather than being baked into the picture — one file
    serves both languages and stays sharp on any display. */
+/* Three across, not three stacked: the full-width rows turned each banner
+   into a letterbox strip that dominated the page. At a third of the width the
+   same artwork reads as a card — piece on the left, name in the ground the
+   photograph already leaves empty on the right. */
 .cat-banners {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
 }
 
 .cat-banner {
@@ -1833,7 +1837,7 @@ button, a {
 .cat-banner-media {
   position: relative;
   width: 100%;
-  aspect-ratio: 1000 / 350;
+  aspect-ratio: 1000 / 390;
   overflow: hidden;
 }
 
@@ -1854,38 +1858,38 @@ button, a {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 56%;
-  right: 12%;
+  left: 50%;
+  right: 13%;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 18px;
+  gap: 10px;
   pointer-events: none;
 }
 
 .cat-banner-name {
   font-family: var(--font-serif);
-  font-size: clamp(20px, 2.6vw, 44px);
+  font-size: clamp(13px, 1.25vw, 20px);
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #4a1420;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .cat-banner-rule {
-  width: clamp(70px, 9vw, 150px);
+  width: clamp(30px, 3.4vw, 54px);
   height: 1px;
   background: var(--ds-gold);
   transition: width 0.5s cubic-bezier(0.2, 0, 0.2, 1);
 }
 
-.cat-banner:hover .cat-banner-rule { width: clamp(100px, 12vw, 200px); }
+.cat-banner:hover .cat-banner-rule { width: clamp(44px, 4.6vw, 74px); }
 
 .cat-banner-chevron {
   position: absolute;
   top: 50%;
-  right: clamp(16px, 3.5%, 46px);
+  right: clamp(8px, 3%, 18px);
   transform: translateY(-50%);
   display: flex;
   color: #4a1420;
@@ -1895,15 +1899,16 @@ button, a {
 
 .cat-banner:hover .cat-banner-chevron { transform: translateY(-50%) translateX(6px); }
 
-@media (max-width: 899px) {
-  .cat-banner-media { aspect-ratio: 1000 / 460; }
-  .cat-banner-label { left: 52%; gap: 12px; }
+@media (max-width: 1100px) {
+  .cat-banners { grid-template-columns: repeat(2, 1fr); }
+  .cat-banner-media { aspect-ratio: 1000 / 430; }
+  .cat-banner-name { font-size: clamp(14px, 2vw, 20px); }
 }
 
 /* On a phone the empty right-hand ground is wasted space: crop to the piece
    and set the name beneath it, where it can be read at a sensible size. */
 @media (max-width: 599px) {
-  .cat-banners { gap: 14px; }
+  .cat-banners { grid-template-columns: 1fr; gap: 14px; }
   .cat-banner-media { aspect-ratio: 3 / 2; }
   .cat-banner-img { object-position: 32% 50%; }
   .cat-banner-label {
@@ -1914,9 +1919,61 @@ button, a {
     gap: 14px;
     padding: 16px 44px 16px 18px;
   }
-  .cat-banner-name { font-size: 17px; letter-spacing: 0.1em; }
-  .cat-banner-rule { width: 40px; flex-shrink: 0; }
-  .cat-banner:hover .cat-banner-rule { width: 40px; }
+  .cat-banner-name { font-size: 16px; letter-spacing: 0.1em; }
+  .cat-banner-rule { width: 34px; flex-shrink: 0; }
+  .cat-banner:hover .cat-banner-rule { width: 34px; }
   .cat-banner-chevron { top: auto; bottom: 20px; transform: none; }
   .cat-banner:hover .cat-banner-chevron { transform: translateX(4px); }
+}
+
+
+/* ── Admin on small screens ───────────────────────────────────────
+   The panel was built for a desk: a fixed 420px edit column beside the
+   list, a four-tab bar and 32px gutters. On a phone that adds up to more
+   than the viewport, which is where the sideways scrolling came from.
+   Inline styles set these values, so the overrides have to shout. */
+.admin-shell { max-width: 100vw; overflow-x: hidden; }
+
+@media (max-width: 900px) {
+  /* Edit form drops below the list instead of sitting beside it */
+  .admin-products-grid {
+    grid-template-columns: 1fr !important;
+    padding: 20px !important;
+    gap: 20px !important;
+  }
+  .admin-products-grid > div:last-child {
+    position: static !important;
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-tabbar { padding: 0 14px !important; gap: 8px !important; }
+  /* Four tabs never fit one phone row — let them scroll as a strip,
+     which keeps them reachable without widening the page. */
+  .admin-tabbar-tabs {
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .admin-tabbar-tabs::-webkit-scrollbar { display: none; }
+  .admin-tabbar-tabs button {
+    padding: 15px 14px !important;
+    font-size: 11px !important;
+    white-space: nowrap;
+  }
+
+  /* Thumbnail, name and the two actions stack rather than squeeze */
+  .admin-product-row { flex-wrap: wrap !important; padding: 14px !important; gap: 12px !important; }
+  .admin-product-row > div:nth-child(2) { flex: 1 1 60% !important; }
+  .admin-product-row > div:last-child { flex: 1 1 100% !important; }
+  .admin-product-row > div:last-child button { flex: 1 1 0; }
+
+  /* Tables scroll inside their own box */
+  .admin-table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
+@media (max-width: 600px) {
+  .admin-products-grid { padding: 14px !important; }
 }

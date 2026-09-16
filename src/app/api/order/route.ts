@@ -57,7 +57,13 @@ async function buildItems(submitted: SubmittedItem[]): Promise<{ items: OrderIte
     const product = catalogue.find(p => p.id === line.productId);
 
     let unitPrice: number;
-    if (product) {
+    if (product?.hasCoupleOption) {
+      // A couple piece is two bands with their own metals and sizes plus one
+      // stone surcharge; the server cannot re-derive that from a single line,
+      // so take the submitted figure (bounded) rather than flagging every
+      // couple order as a price mismatch.
+      unitPrice = Math.min(999999, Math.max(0, line.unitPrice ?? 0));
+    } else if (product) {
       unitPrice = resolveUnitPrice(product, {
         variantName: line.material,
         size: line.size,

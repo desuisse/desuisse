@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
+import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, formatPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
 import { Order, OrderStatus, ORDER_STATUSES, summarise } from '@/lib/orders';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 import { sanitizeText, sanitizeUrl, sanitizeNumber, isValidProduct, LIMITS } from '@/lib/security';
@@ -671,7 +671,7 @@ export default function AdminPage() {
 
   // ADMIN DASHBOARD
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font-sans)' }}>
+    <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font-sans)' }}>
 
       {/* Sidebar */}
       <aside className="admin-sidebar" style={{ padding: '32px 0' }}>
@@ -719,8 +719,8 @@ export default function AdminPage() {
       {/* Main content */}
       <main style={{ flex: 1, background: '#fafaf8', overflowY: 'auto' }}>
         {/* Tab bar */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0 }}>
-          <div style={{ display: 'flex' }}>
+        <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0 }}>
+          <div className="admin-tabbar-tabs" style={{ display: 'flex' }}>
             {(['products', 'orders', 'images', 'backups'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{
                 padding: '18px 24px', background: 'none', border: 'none',
@@ -1087,7 +1087,7 @@ export default function AdminPage() {
                   {language === 'sq' ? 'Asnjë snapshot ende. Krijoni një manualisht ose ruani disa produkte.' : 'No snapshots yet. Create one manually, or save some products.'}
                 </p>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#fafaf8' }}>
                       <th style={{ padding: '12px 20px', textAlign: 'left', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -1155,7 +1155,7 @@ export default function AdminPage() {
                   {language === 'sq' ? 'Nuk ka aktivitet ende.' : 'No activity yet.'}
                 </p>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#fafaf8' }}>
                       <th style={{ padding: '12px 20px', textAlign: 'left', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
@@ -1203,7 +1203,7 @@ export default function AdminPage() {
 
         {/* ── PRODUCTS TAB ── */}
         {activeTab === 'products' && (
-        <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: editing || isAdding ? '1fr 420px' : '1fr', gap: 32, alignItems: 'start' }}>
+        <div className="admin-products-grid" style={{ padding: '32px', display: 'grid', gridTemplateColumns: editing || isAdding ? '1fr 420px' : '1fr', gap: 32, alignItems: 'start' }}>
 
           {/* Product list */}
           <div>
@@ -1239,6 +1239,7 @@ export default function AdminPage() {
                 {pagedProducts.map((product) => (
                   <div
                     key={product.id}
+                    className="admin-product-row"
                     style={{
                       background: '#fff',
                       border: editing?.id === product.id ? '1px solid #c9a84c' : '1px solid #e8e0d4',
@@ -1272,7 +1273,10 @@ export default function AdminPage() {
                         )}
                       </div>
                       <p style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
-                        {categoryLabels[product.category]} · {product.price.toLocaleString('de-DE')}€{product.priceMax ? ` – ${product.priceMax.toLocaleString('de-DE')}€` : ''}
+                        {/* Exactly what the shop shows — the admin list used to
+                            print the fallback price field instead, so a product
+                            could read 1.200€ here and 350€ to a customer. */}
+                        {categoryLabels[product.category]} · {formatPrice(product)}
                       </p>
                     </div>
 
@@ -1372,6 +1376,11 @@ export default function AdminPage() {
                   <div>
                     <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>{t.admin.price} *</label>
                     <input type="number" className="ds-input" value={form.price || ''} onChange={e => setForm({ ...form, price: Number(e.target.value) })} placeholder="500" min="0" />
+                    <p style={{ fontSize: 10, color: '#bbb', lineHeight: 1.5, marginTop: 5 }}>
+                      {language === 'sq'
+                        ? 'Rezervë — përdoret vetëm nëse produkti nuk ka materiale. Çmimi real vjen nga çmimet e materialeve më poshtë.'
+                        : 'Fallback only — used if the product has no materials. The real price comes from the material prices below.'}
+                    </p>
                   </div>
                   <div>
                     <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>Max Price</label>

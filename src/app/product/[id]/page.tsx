@@ -95,8 +95,9 @@ function EngravingSection({ language, onEngravingChange }: {
 }
 
 // ── Couple ring section — checkbox toggles each gender ────────────
-function CoupleSection({ product, language, onPriceChange }: {
+function CoupleSection({ product, language, stoneExtra, onPriceChange }: {
   product: Product;
+  stoneExtra: number;
   language: string;
   onPriceChange: (total: number) => void;
 }) {
@@ -121,7 +122,10 @@ function CoupleSection({ product, language, onPriceChange }: {
 
   const womenPrice = womenEnabled && womenVariant ? getPrice(womenVariant, womenSize) : 0;
   const menPrice = menEnabled && menVariant ? getPrice(menVariant, menSize) : 0;
-  const total = womenPrice + menPrice;
+  // The stone surcharge is added once to the pair, not per band, and it is
+  // added here so this total is the only number the page has to trust.
+  const metal = womenPrice + menPrice;
+  const total = metal > 0 ? metal + stoneExtra : 0;
 
   useEffect(() => { onPriceChange(total); }, [total, onPriceChange]);
 
@@ -454,7 +458,7 @@ export default function ProductPage() {
   };
 
   const displayPrice = product.hasCoupleOption
-    ? (couplePrice > 0 ? fmtEuro(couplePrice + stoneExtra) : formatPrice(product))
+    ? (couplePrice > 0 ? fmtEuro(couplePrice) : formatPrice(product))
     : currentVariant
       ? variantPriceLabel(currentVariant)
       : (stoneExtra && product.price > 0 ? fmtEuro(product.price + stoneExtra) : formatPrice(product));
@@ -516,6 +520,63 @@ export default function ProductPage() {
     marginBottom: 10, display: 'block',
   };
 
+  /* The stone applies to the whole order line, so it is rendered for couple
+     pieces too — they used to get CoupleSection *instead of* every selector,
+     which meant a product with three stone prices had no way to pick one. */
+  const stoneRows = (
+    <>
+          {/* Stone type row */}
+          {product.stones && product.stones.length > 1 && (
+            <div style={rowStyle}>
+              <span style={rowLabelStyle}>{t.stone}</span>
+              <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {product.stones.map(s => {
+                  // Show what each stone costs on the chip itself, so the
+                  // customer can compare without clicking through all three.
+                  const extra = getStoneSurcharge(product, s);
+                  return (
+                    <button key={s} onClick={() => setSelectedStone(s === selectedStone ? '' : s)} style={activeBtnStyle(selectedStone === s)}>
+                      {s}
+                      {extra > 0 && (
+                        <span style={{ marginLeft: 6, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{formatStoneSurcharge(extra)}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {product.stones && product.stones.length === 1 && (
+            <div style={rowStyle}>
+              <span style={rowLabelStyle}>{t.stone}</span>
+              <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
+                {product.stones[0]}
+              </div>
+            </div>
+          )}
+
+          {/* Stone size row */}
+          {product.stoneSizes && product.stoneSizes.length > 1 && (
+            <div style={rowStyle}>
+              <span style={rowLabelStyle}>{t.stoneSize}</span>
+              <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {product.stoneSizes.map(s => (
+                  <button key={s} onClick={() => setSelectedStoneSize(s === selectedStoneSize ? '' : s)} style={activeBtnStyle(selectedStoneSize === s)}>{s}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {product.stoneSizes && product.stoneSizes.length === 1 && (
+            <div style={rowStyle}>
+              <span style={rowLabelStyle}>{t.stoneSize}</span>
+              <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
+                {product.stoneSizes[0]}
+              </div>
+            </div>
+          )}
+    </>
+  );
+
   return (
     <>
       <Header />
@@ -555,7 +616,10 @@ export default function ProductPage() {
 
           {/* If couple option → show CoupleSection instead of standard selectors */}
           {product.hasCoupleOption ? (
-            <CoupleSection product={product} language={language} onPriceChange={setCouplePrice} />
+            <>
+              {stoneRows}
+              <CoupleSection product={product} language={language} stoneExtra={stoneExtra} onPriceChange={setCouplePrice} />
+            </>
           ) : (
             <>
               {/* Material row — only show selector when there's a real choice */}
@@ -582,55 +646,7 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* Stone type row */}
-              {product.stones && product.stones.length > 1 && (
-                <div style={rowStyle}>
-                  <span style={rowLabelStyle}>{t.stone}</span>
-                  <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {product.stones.map(s => {
-                      // Show what each stone costs on the chip itself, so the
-                      // customer can compare without clicking through all three.
-                      const extra = getStoneSurcharge(product, s);
-                      return (
-                        <button key={s} onClick={() => setSelectedStone(s === selectedStone ? '' : s)} style={activeBtnStyle(selectedStone === s)}>
-                          {s}
-                          {extra > 0 && (
-                            <span style={{ marginLeft: 6, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{formatStoneSurcharge(extra)}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              {product.stones && product.stones.length === 1 && (
-                <div style={rowStyle}>
-                  <span style={rowLabelStyle}>{t.stone}</span>
-                  <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
-                    {product.stones[0]}
-                  </div>
-                </div>
-              )}
-
-              {/* Stone size row */}
-              {product.stoneSizes && product.stoneSizes.length > 1 && (
-                <div style={rowStyle}>
-                  <span style={rowLabelStyle}>{t.stoneSize}</span>
-                  <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {product.stoneSizes.map(s => (
-                      <button key={s} onClick={() => setSelectedStoneSize(s === selectedStoneSize ? '' : s)} style={activeBtnStyle(selectedStoneSize === s)}>{s}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {product.stoneSizes && product.stoneSizes.length === 1 && (
-                <div style={rowStyle}>
-                  <span style={rowLabelStyle}>{t.stoneSize}</span>
-                  <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
-                    {product.stoneSizes[0]}
-                  </div>
-                </div>
-              )}
+              {stoneRows}
 
               {/* Size row */}
               {isRing ? (
@@ -721,8 +737,9 @@ export default function ProductPage() {
                 alert(language === 'sq' ? 'Çmimi nuk është i disponueshëm.' : 'Price not available — please contact us.');
                 return;
               }
-              // Same surcharge the customer just read on screen
-              unitPrice += stoneExtra;
+              // Same surcharge the customer just read on screen. Couple pieces
+              // already carry it inside their own total.
+              if (!product.hasCoupleOption) unitPrice += stoneExtra;
               addToCart(product, 1, selectedVariant, selectedSize, unitPrice, selectedStone || undefined);
             }} style={{ padding: '15px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#c9a84c'}

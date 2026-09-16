@@ -148,16 +148,35 @@ export function formatVariantPrice(variant: MaterialVariant): string {
   return `${price.toLocaleString('de-DE')}.00€`;
 }
 
+const euro = (n: number) => `${Math.round(n).toLocaleString('de-DE')}.00€`;
+
+/**
+ * The one figure shown wherever a product is listed.
+ *
+ * Material prices are per band. A couple piece is bought as a pair, so its
+ * headline is two bands — otherwise a set priced 350–550 per ring advertises
+ * itself at half what the customer actually pays.
+ *
+ * The product's own price/priceMax fields are only a fallback for products
+ * that have no materials configured; anything with materials is quoted from
+ * them, so the catalogue can never disagree with the product page.
+ */
 export function formatPrice(product: Product): string {
-  // Prefer the default variant (Yellow Gold 14ct) over showing every
-  // material's price mashed into one big range.
+  const bands = product.hasCoupleOption ? 2 : 1;
   const defaultVariant = getDefaultVariant(product);
-  if (defaultVariant) return formatVariantPrice(defaultVariant);
+
+  if (defaultVariant) {
+    const min = defaultVariant.price * bands;
+    const max = (defaultVariant.priceMax && defaultVariant.priceMax > defaultVariant.price
+      ? defaultVariant.priceMax
+      : defaultVariant.price) * bands;
+    return max > min ? `${euro(min)} – ${euro(max)}` : euro(min);
+  }
 
   if (product.priceMax && product.priceMax > product.price) {
-    return `${product.price.toLocaleString('de-DE')}.00€ – ${product.priceMax.toLocaleString('de-DE')}.00€`;
+    return `${euro(product.price)} – ${euro(product.priceMax)}`;
   }
-  return `${product.price.toLocaleString('de-DE')}.00€`;
+  return euro(product.price);
 }
 
 export const RING_CATEGORIES: Category[] = ['everyday-rings', 'engagement-rings', 'wedding-rings'];
