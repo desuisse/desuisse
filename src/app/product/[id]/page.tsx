@@ -95,37 +95,45 @@ function EngravingSection({ language, onEngravingChange }: {
 }
 
 // ── Couple ring section — checkbox toggles each gender ────────────
-function CoupleSection({ product, language, stoneExtra, onPriceChange }: {
+function CoupleSection({ product, language, stoneExtra, selectedStone, setSelectedStone, selectedStoneSize, setSelectedStoneSize, onPreviewVariantChange, onPriceChange }: {
   product: Product;
   stoneExtra: number;
   language: string;
+  selectedStone: string;
+  setSelectedStone: (stone: string) => void;
+  selectedStoneSize: string;
+  setSelectedStoneSize: (size: string) => void;
+  onPreviewVariantChange: (variant: string) => void;
   onPriceChange: (total: number) => void;
 }) {
   const [womenEnabled, setWomenEnabled] = useState(true);
   const [menEnabled, setMenEnabled] = useState(true);
-  const [womenVariant, setWomenVariant] = useState('');
+  const [womenMaterial, setWomenMaterial] = useState('');
+  const [womenCarat, setWomenCarat] = useState('');
   const [womenSize, setWomenSize] = useState(String(Math.round((RING_SIZE_MIN + RING_SIZE_MAX) / 2)));
-  const [menVariant, setMenVariant] = useState('');
+  const [menMaterial, setMenMaterial] = useState('');
+  const [menCarat, setMenCarat] = useState('');
   const [menSize, setMenSize] = useState(String(Math.round((RING_SIZE_MIN + RING_SIZE_MAX) / 2)));
 
-  const getPrice = (variantName: string, size: string) => {
-    const v = product.materialVariants.find(v => v.name === variantName);
-    if (!v) return 0;
-    return priceForRingSize(v, Number(size) || RING_SIZE_MIN);
-  };
+  const materialOf = (name: string) => name.replace(/\s+(14|18)ct$/, '');
+  const caratOf = (name: string) => name.match(/(14ct|18ct)$/)?.[1] || '';
+  const materials = Array.from(new Set(product.materialVariants.map(v => materialOf(v.name))));
+  const findVariant = (material: string, carat: string) => product.materialVariants.find(v =>
+    materialOf(v.name) === material && (carat ? caratOf(v.name) === carat : true),
+  );
+  const womenVariant = findVariant(womenMaterial, womenCarat);
+  const menVariant = findVariant(menMaterial, menCarat);
+  const getPrice = (variant: MaterialVariant | undefined, size: string) => variant ? priceForRingSize(variant, Number(size) || RING_SIZE_MIN) : 0;
 
   /* Formatter for the live price beside the slider thumb. */
-  const formatFor = (variantName: string) => {
-    const v = product.materialVariants.find(mv => mv.name === variantName);
-    return v ? (n: number) => formatRingSizePrice(v, n) : undefined;
-  };
+  const formatFor = (variant: MaterialVariant | undefined) => variant ? (n: number) => formatRingSizePrice(variant, n) : undefined;
 
-  const womenPrice = womenEnabled && womenVariant ? getPrice(womenVariant, womenSize) : 0;
-  const menPrice = menEnabled && menVariant ? getPrice(menVariant, menSize) : 0;
+  const womenPrice = womenEnabled ? getPrice(womenVariant, womenSize) : 0;
+  const menPrice = menEnabled ? getPrice(menVariant, menSize) : 0;
   // The stone surcharge is added once to the pair, not per band, and it is
   // added here so this total is the only number the page has to trust.
   const metal = womenPrice + menPrice;
-  const total = metal > 0 ? metal + stoneExtra : 0;
+  const total = metal > 0 ? metal + (womenEnabled ? stoneExtra : 0) : 0;
 
   useEffect(() => { onPriceChange(total); }, [total, onPriceChange]);
 
@@ -133,7 +141,10 @@ function CoupleSection({ product, language, stoneExtra, onPriceChange }: {
     womens: language === 'sq' ? "Unaza e Gruas" : "Women's Ring",
     mens: language === 'sq' ? "Unaza e Burrit" : "Men's Ring",
     material: language === 'sq' ? 'Materiali' : 'Material',
+    carat: language === 'sq' ? 'Karatazhi' : 'Carat',
     size: language === 'sq' ? 'Madhësia' : 'Ring Size',
+    stone: language === 'sq' ? 'Guri' : 'Stone',
+    stoneSize: language === 'sq' ? 'Madhësia e Gurit' : 'Stone Size',
     sizeAdj: language === 'sq' ? 'Rregullim falas i madhësisë' : 'Free size adjustment',
     selectGender: language === 'sq' ? 'Zgjidhni çfarë dëshironi:' : 'Select what you want:',
     totalPrice: language === 'sq' ? 'Çmimi total' : 'Total price',
@@ -145,11 +156,13 @@ function CoupleSection({ product, language, stoneExtra, onPriceChange }: {
     fontFamily: 'var(--font-sans)', fontSize: 11, cursor: 'pointer', transition: 'all 0.18s',
   });
 
-  const genderRing = ({ title, enabled, onToggle, variant, setVariant, size, setSize, price }: {
+  const genderRing = ({ title, enabled, onToggle, material, setMaterial, carat, setCarat, size, setSize, price, isWomen }: {
     title: string; enabled: boolean; onToggle: () => void;
-    variant: string; setVariant: (v: string) => void;
+    material: string; setMaterial: (material: string) => void;
+    carat: string; setCarat: (carat: string) => void;
     size: string; setSize: (s: string) => void;
     price: number;
+    isWomen: boolean;
   }) => (
     <div style={{ border: `1px solid ${enabled ? '#1a0a0a' : '#e8e0d4'}`, transition: 'border-color 0.2s' }}>
       {/* Header with checkbox */}
@@ -168,22 +181,53 @@ function CoupleSection({ product, language, stoneExtra, onPriceChange }: {
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.material}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {product.materialVariants.map(v => (
-                <button key={v.name} onClick={() => setVariant(v.name === variant ? '' : v.name)} style={variantBtn(variant === v.name)}>
-                  {v.name}
+              {materials.map(option => (
+                <button key={option} onClick={() => {
+                  const nextCarats = product.materialVariants.filter(v => materialOf(v.name) === option).map(v => caratOf(v.name)).filter(Boolean);
+                  const nextCarat = nextCarats.includes(carat) ? carat : (nextCarats[0] || '');
+                  setMaterial(option); setCarat(nextCarat);
+                  const nextVariant = findVariant(option, nextCarat);
+                  if (nextVariant) onPreviewVariantChange(nextVariant.name);
+                }} style={variantBtn(material === option)}>
+                  {option}
                 </button>
               ))}
             </div>
           </div>
-          <div>
+          {material && product.materialVariants.filter(v => materialOf(v.name) === material).some(v => caratOf(v.name)) && (
+            <div style={{ marginBottom: 20 }}>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.carat}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {product.materialVariants.filter(v => materialOf(v.name) === material).map(v => {
+                  const option = caratOf(v.name);
+                  return option ? <button key={option} onClick={() => { setCarat(option); onPreviewVariantChange(v.name); }} style={variantBtn(carat === option)}>{option}</button> : null;
+                })}
+              </div>
+            </div>
+          )}
+          <div style={{ marginBottom: isWomen && product.stones?.length ? 20 : 0 }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.size}</p>
             <RingSizeSlider
               value={Number(size) || RING_SIZE_MIN}
               onChange={s => setSize(String(s))}
-              formatPrice={formatFor(variant)}
+              formatPrice={formatFor(findVariant(material, carat))}
             />
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa', marginTop: 8 }}>{tl.sizeAdj}</p>
           </div>
+          {isWomen && product.stones && product.stones.length > 0 && (
+            <div>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.stone}</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: product.stoneSizes?.length ? 16 : 0 }}>
+                {product.stones.map(stone => <button key={stone} onClick={() => setSelectedStone(stone === selectedStone ? '' : stone)} style={variantBtn(stone === selectedStone)}>{stone}</button>)}
+              </div>
+              {product.stoneSizes && product.stoneSizes.length > 0 && <>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.stoneSize}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {product.stoneSizes.map(stoneSize => <button key={stoneSize} onClick={() => setSelectedStoneSize(stoneSize === selectedStoneSize ? '' : stoneSize)} style={variantBtn(stoneSize === selectedStoneSize)}>{stoneSize}</button>)}
+                </div>
+              </>}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -194,9 +238,9 @@ function CoupleSection({ product, language, stoneExtra, onPriceChange }: {
       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 16 }}>{tl.selectGender}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {genderRing({ title: tl.womens, enabled: womenEnabled, onToggle: () => setWomenEnabled(!womenEnabled),
-          variant: womenVariant, setVariant: setWomenVariant, size: womenSize, setSize: setWomenSize, price: womenPrice })}
+          material: womenMaterial, setMaterial: setWomenMaterial, carat: womenCarat, setCarat: setWomenCarat, size: womenSize, setSize: setWomenSize, price: womenPrice, isWomen: true })}
         {genderRing({ title: tl.mens, enabled: menEnabled, onToggle: () => setMenEnabled(!menEnabled),
-          variant: menVariant, setVariant: setMenVariant, size: menSize, setSize: setMenSize, price: menPrice })}
+          material: menMaterial, setMaterial: setMenMaterial, carat: menCarat, setCarat: setMenCarat, size: menSize, setSize: setMenSize, price: menPrice, isWomen: false })}
       </div>
       {(womenEnabled || menEnabled) && (womenPrice > 0 || menPrice > 0) && (
         <div style={{ marginTop: 16, padding: '14px 20px', background: '#f7f3ee', border: '1px solid #e8e0d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -525,9 +569,8 @@ export default function ProductPage() {
     marginBottom: 10, display: 'block',
   };
 
-  /* The stone applies to the whole order line, so it is rendered for couple
-     pieces too — they used to get CoupleSection *instead of* every selector,
-     which meant a product with three stone prices had no way to pick one. */
+  /* Single-ring products present their stone choice alongside the standard
+     selectors. Couple pieces keep it inside the women's-ring configuration. */
   const stoneRows = (
     <>
           {/* Stone type row */}
@@ -621,10 +664,17 @@ export default function ProductPage() {
 
           {/* If couple option → show CoupleSection instead of standard selectors */}
           {product.hasCoupleOption ? (
-            <>
-              {stoneRows}
-              <CoupleSection product={product} language={language} stoneExtra={stoneExtra} onPriceChange={setCouplePrice} />
-            </>
+            <CoupleSection
+              product={product}
+              language={language}
+              stoneExtra={stoneExtra}
+              selectedStone={selectedStone}
+              setSelectedStone={setSelectedStone}
+              selectedStoneSize={selectedStoneSize}
+              setSelectedStoneSize={setSelectedStoneSize}
+              onPreviewVariantChange={setSelectedVariant}
+              onPriceChange={setCouplePrice}
+            />
           ) : (
             <>
               {/* Material row — only show selector when there's a real choice */}
