@@ -153,10 +153,14 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
   };
 
   const variantBtn = (active: boolean): React.CSSProperties => ({
-    padding: '8px 14px', border: `1px solid ${active ? '#1a0a0a' : '#e8e0d4'}`,
+    minHeight: 44, padding: '8px 12px', border: `1px solid ${active ? '#1a0a0a' : '#e8e0d4'}`,
     background: active ? '#1a0a0a' : '#fff', color: active ? '#fff' : '#444',
     fontFamily: 'var(--font-sans)', fontSize: 11, cursor: 'pointer', transition: 'all 0.18s',
   });
+
+  const choiceGridStyle: React.CSSProperties = {
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))', gap: 8,
+  };
 
   const genderRing = ({ title, enabled, onToggle, material, setMaterial, carat, setCarat, size, setSize, price, isWomen }: {
     title: string; enabled: boolean; onToggle: () => void;
@@ -170,7 +174,7 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
     // here as well as in the order total.
     const displayedPrice = price + (isWomen ? stoneExtra : 0);
     return (
-    <div style={{ border: `1px solid ${enabled ? '#1a0a0a' : '#e8e0d4'}`, transition: 'border-color 0.2s' }}>
+    <div className="couple-ring-card" style={{ border: `1px solid ${enabled ? '#1a0a0a' : '#e8e0d4'}`, transition: 'border-color 0.2s' }}>
       {/* Header with checkbox */}
       <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: enabled ? '1px solid #e8e0d4' : 'none', background: enabled ? '#fff' : '#faf8f5', cursor: 'pointer' }} onClick={onToggle}>
         <div style={{ width: 20, height: 20, border: `2px solid ${enabled ? '#1a0a0a' : '#ccc'}`, background: enabled ? '#1a0a0a' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0 }}>
@@ -186,7 +190,7 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
         <div style={{ padding: '20px' }}>
           <div style={{ marginBottom: 20 }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.material}</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <div style={choiceGridStyle}>
               {materials.map(option => (
                 <button key={option} onClick={() => {
                   const nextCarats = product.materialVariants.filter(v => materialOf(v.name) === option).map(v => caratOf(v.name)).filter(Boolean);
@@ -203,7 +207,7 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
           {material && product.materialVariants.filter(v => materialOf(v.name) === material).some(v => caratOf(v.name)) && (
             <div style={{ marginBottom: 20 }}>
               <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.carat}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={choiceGridStyle}>
                 {product.materialVariants.filter(v => materialOf(v.name) === material).map(v => {
                   const option = caratOf(v.name);
                   return option ? <button key={option} onClick={() => { setCarat(option); onPreviewVariantChange(v.name); }} style={variantBtn(carat === option)}>{option}</button> : null;
@@ -223,12 +227,12 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
           {isWomen && product.stones && product.stones.length > 0 && (
             <div>
               <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.stone}</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: product.stoneSizes?.length ? 16 : 0 }}>
+              <div style={{ ...choiceGridStyle, marginBottom: product.stoneSizes?.length ? 16 : 0 }}>
                 {product.stones.map(stone => <button key={stone} onClick={() => setSelectedStone(stone === selectedStone ? '' : stone)} style={variantBtn(stone === selectedStone)}>{stone}</button>)}
               </div>
               {product.stoneSizes && product.stoneSizes.length > 0 && <>
                 <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.stoneSize}</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div style={choiceGridStyle}>
                   {product.stoneSizes.map(stoneSize => <button key={stoneSize} onClick={() => setSelectedStoneSize(stoneSize === selectedStoneSize ? '' : stoneSize)} style={variantBtn(stoneSize === selectedStoneSize)}>{stoneSize}</button>)}
                 </div>
               </>}
@@ -636,7 +640,7 @@ export default function ProductPage() {
     <>
       <Header />
 
-      <div style={{ maxWidth: 1300, margin: '0 auto', padding: '28px 40px 0' }}>
+      <div className="product-back" style={{ maxWidth: 1300, margin: '0 auto', padding: '28px 40px 0' }}>
         <Link href="/shop" style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999', textDecoration: 'none', letterSpacing: '0.08em' }}
           onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#c9a84c'}
           onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#999'}
@@ -644,11 +648,11 @@ export default function ProductPage() {
       </div>
 
       {/* ── Two-column product section ── */}
-      <section style={{ maxWidth: 1300, margin: '0 auto', padding: '28px 40px 60px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 72, alignItems: 'start' }} className="product-two-col">
+      <section style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 40px 60px', display: 'grid', gridTemplateColumns: 'minmax(0, 0.9fr) minmax(0, 1.1fr)', gap: 40, alignItems: 'start' }} className="product-two-col">
 
         {/* LEFT: image */}
-        <div>
-          <div style={{ background: '#faf8f5', position: 'relative', aspectRatio: '1', marginBottom: 14, overflow: 'hidden' }}>
+        <div className="product-gallery">
+          <div className="product-main-image" style={{ background: '#faf8f5', position: 'relative', aspectRatio: '1', marginBottom: 14, overflow: 'hidden' }}>
             <Image src={images[activeImg]} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
           </div>
           {images.length > 1 && (
@@ -658,6 +662,14 @@ export default function ProductPage() {
                   <Image src={img} alt={`${product.name} ${i + 1}`} fill style={{ objectFit: 'cover' }} unoptimized />
                 </button>
               ))}
+            </div>
+          )}
+          {(product.description || product.descriptionSq) && (
+            <div className="product-gallery-description">
+              <p style={labelStyle}>{t.description}</p>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#555', lineHeight: 1.85 }}>
+                {language === 'sq' && product.descriptionSq ? product.descriptionSq : product.description}
+              </p>
             </div>
           )}
         </div>
@@ -763,7 +775,7 @@ export default function ProductPage() {
           <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#888', letterSpacing: '0.05em', marginBottom: 20, lineHeight: 1.7 }}>{t.availability}</p>
 
           {/* CTA buttons — with icons */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+          <div className="product-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <button onClick={() => setScheduleModal(true)} style={{ padding: '15px', background: '#fff', color: '#1a0a0a', border: '1px solid #1a0a0a', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#f7f3ee'}
               onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#fff'}
@@ -821,15 +833,6 @@ export default function ProductPage() {
           </button>
 
           {/* Description */}
-          {(product.description || product.descriptionSq) && (
-            <div style={{ borderTop: '1px solid #f0ebe3', paddingTop: 20, marginBottom: 8 }}>
-              <p style={labelStyle}>{t.description}</p>
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#555', lineHeight: 1.9 }}>
-                {language === 'sq' && product.descriptionSq ? product.descriptionSq : product.description}
-              </p>
-            </div>
-          )}
-
           {/* Meta */}
           <div style={{ borderTop: '1px solid #f0ebe3', paddingTop: 16, marginBottom: 8 }}>
             {product.sku && <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#bbb', marginBottom: 4 }}><strong style={{ color: '#999' }}>{t.sku}:</strong> {product.sku}</p>}
@@ -907,11 +910,20 @@ export default function ProductPage() {
       <Footer />
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .product-gallery { position: sticky; top: 104px; }
+        .product-gallery-description { margin-top: 32px; padding-top: 24px; border-top: 1px solid #f0ebe3; }
         @media (max-width: 900px) {
-          .product-two-col { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .product-two-col { grid-template-columns: 1fr !important; gap: 28px !important; padding: 22px 28px 48px !important; }
+          .product-gallery { position: static; max-width: 680px; margin: 0 auto; width: 100%; }
         }
         @media (max-width: 640px) {
-          .product-two-col { padding: 20px 20px 40px !important; }
+          .product-back { padding: 16px 16px 0 !important; }
+          .product-two-col { padding: 16px 16px 36px !important; gap: 20px !important; }
+          .product-main-image { margin-bottom: 10px !important; }
+          .product-gallery-description { margin-top: 22px; padding-top: 18px; }
+          .couple-ring-card > div:first-child { padding: 14px 16px !important; }
+          .couple-ring-card > div:last-child { padding: 16px !important; }
+          .product-actions { grid-template-columns: 1fr !important; }
           .info-tiles-grid { grid-template-columns: 1fr 1fr !important; }
           .couple-grid { grid-template-columns: 1fr !important; }
         }
