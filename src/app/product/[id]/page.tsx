@@ -426,6 +426,9 @@ export default function ProductPage() {
     }
   }, [product]);
 
+  // Keep the selected material photo in view when the shopper changes metal.
+  useEffect(() => { setActiveImg(0); }, [selectedVariant]);
+
   if (!product) return (
     <>
       <Header />
@@ -467,7 +470,9 @@ export default function ProductPage() {
   // no slider driving it to a concrete figure (e.g. bracelets, necklaces).
   const isPriceRange = !product.hasCoupleOption && !ringSizePriceApplies && !!currentVariant?.priceMax && currentVariant.priceMax > currentVariant.price;
 
-  const images = [product.image, product.image2].filter(Boolean) as string[];
+  // A material photo takes precedence over the general product image, so a
+  // customer sees the exact Yellow, White, or Rose Gold piece they selected.
+  const images = [currentVariant?.image || product.image, product.image2].filter(Boolean) as string[];
   const catLabel = CATEGORIES.find(c => c.key === product.category);
 
   const t = {

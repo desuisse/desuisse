@@ -11,6 +11,9 @@ export interface MaterialVariant {
   name: string;
   price: number;     // minimum / base price (or the exact price, if priceMax is not set)
   priceMax?: number; // maximum price — set this when the exact weight/price is only known once made
+  /** Optional product photo for this metal. A Yellow Gold photo, for example,
+   * is shown as soon as a shopper chooses any Yellow Gold carat. */
+  image?: string;
 }
 
 export type Category =

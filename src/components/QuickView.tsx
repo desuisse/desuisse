@@ -31,6 +31,7 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
   const isRing = isRingCategory(product.category);
   const hasVariants = product.materialVariants && product.materialVariants.length > 0;
   const currentVariant = hasVariants ? product.materialVariants.find(v => v.name === selectedVariant) : null;
+  const displayImage = currentVariant?.image || product.image;
   const selectedSizeNum = selectedSize ? Number(selectedSize) : null;
   const ringSizePriceApplies = isRing && !!selectedSizeNum && !!currentVariant;
   // Pick a reasonable default for unitPrice: selected variant > product.price > first variant > 0
@@ -92,7 +93,7 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
       <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#fff', zIndex: 301, width: '90%', maxWidth: 880, maxHeight: '90vh', overflowY: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', animation: 'qvSlideIn 0.25s ease', boxShadow: '0 20px 80px rgba(26,10,10,0.25)' }} className="qv-modal">
         {/* Image */}
         <div style={{ background: '#faf8f5', position: 'relative', minHeight: 420, overflow: 'hidden' }}>
-          <Image src={product.image} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
+          <Image src={displayImage} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
         </div>
         {/* Details */}
         <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', position: 'relative' }}>

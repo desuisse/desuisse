@@ -445,6 +445,7 @@ export default function AdminPage() {
     const cleanVariants = (form.materialVariants || []).map(v => ({
       name: sanitizeText(v.name, 50),
       price: sanitizeNumber(v.price, 0, 999999),
+      ...(v.image ? { image: sanitizeUrl(v.image) } : {}),
       // BUG FIX: this used to drop priceMax entirely on save, which meant
       // every variant silently lost its Max price — the ring-size slider
       // then had nothing to interpolate toward, so the price never moved.
@@ -1446,9 +1447,38 @@ export default function AdminPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {MATERIAL_OPTIONS.filter(mat => (form.materialVariants || []).some(v => v.name.startsWith(mat))).map(mat => {
                           const materialHasCarat = mat !== 'Silver' && mat !== 'Platinum';
+                          const materialImage = (form.materialVariants || []).find(v => v.name.startsWith(mat))?.image || '';
+                          const setMaterialImage = (image: string) => {
+                            setForm({
+                              ...form,
+                              materialVariants: (form.materialVariants || []).map(v =>
+                                v.name.startsWith(mat) ? { ...v, image } : v,
+                              ),
+                            });
+                          };
                           return (
                           <div key={mat} style={{ background: '#f7f3ee', padding: '12px 14px', border: '1px solid #e8e0d4' }}>
                             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, color: '#1a0a0a', marginBottom: 10 }}>{mat}</p>
+                            <div style={{ marginBottom: 14 }}>
+                              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>
+                                {language === 'sq' ? `Foto për ${mat}` : `${mat} photo`}
+                              </p>
+                              <CloudinaryUploader
+                                currentUrl={materialImage}
+                                onUploaded={setMaterialImage}
+                                language={language}
+                              />
+                              <details style={{ marginTop: 7 }}>
+                                <summary style={{ cursor: 'pointer', fontSize: 10, color: '#888', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>
+                                  {language === 'sq' ? 'ose ngjit URL manualisht' : 'or paste a URL manually'}
+                                </summary>
+                                <input type="url" value={materialImage} onChange={e => setMaterialImage(e.target.value)} placeholder="https://..."
+                                  style={{ width: '100%', marginTop: 6, padding: '6px 8px', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, outline: 'none' }} />
+                              </details>
+                              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#aaa', marginTop: 6, lineHeight: 1.45 }}>
+                                {language === 'sq' ? 'Kjo foto përdoret për të gjitha karatazhet e këtij materiali.' : 'This photo is used for every carat of this material.'}
+                              </p>
+                            </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {!materialHasCarat ? (
                                 // Silver / Platinum: no carat — one row, straight to Min/Max

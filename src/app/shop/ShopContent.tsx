@@ -24,7 +24,6 @@ export default function ShopContent() {
 
   const t = {
     title: language === 'sq' ? 'Dyqani' : 'Shop',
-    all: language === 'sq' ? 'Të gjitha' : 'All',
     categories: language === 'sq' ? 'Kategoritë' : 'Categories',
     materials: language === 'sq' ? 'Materialet' : 'Materials',
     filterPrice: language === 'sq' ? 'Filtro sipas çmimit' : 'Filter by Price',
@@ -100,10 +99,6 @@ export default function ShopContent() {
       <div style={{ marginBottom: 28 }}>
         <p style={sectionTitle}>{t.categories}</p>
         <div style={{ borderTop: '1px solid #e8e0d4', paddingTop: 8 }}>
-          <button onClick={() => setActiveCategory('all')} style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: activeCategory === 'all' ? '#c9a84c' : '#666', fontWeight: activeCategory === 'all' ? 600 : 400, cursor: 'pointer', padding: '9px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', width: '100%', textAlign: 'left' }}>
-            {t.all}
-            {activeCategory === 'all' && <span style={{ color: '#c9a84c' }}>›</span>}
-          </button>
           {CATEGORIES.map(cat => (
             <button key={cat.key} onClick={() => setActiveCategory(cat.key)} style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: activeCategory === cat.key ? '#c9a84c' : '#666', fontWeight: activeCategory === cat.key ? 600 : 400, cursor: 'pointer', padding: '9px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', width: '100%', textAlign: 'left' }}>
               {language === 'sq' ? cat.sq : cat.en}
