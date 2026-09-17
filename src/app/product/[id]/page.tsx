@@ -441,6 +441,7 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedStone, setSelectedStone] = useState('');
   const [selectedStoneSize, setSelectedStoneSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
   const [activeImg, setActiveImg] = useState(0);
   const [engraving, setEngraving] = useState({ enabled: false, text: '', symbol: '' });
   const [couplePrice, setCouplePrice] = useState(0);
@@ -472,6 +473,7 @@ export default function ProductPage() {
     }
     if (product.stones?.length === 1)           setSelectedStone(product.stones[0]);
     if (product.stoneSizes?.length === 1)       setSelectedStoneSize(product.stoneSizes[0]);
+    if (product.colorVariants?.length)          setSelectedColor(product.colorVariants[0].name);
     if (isRingCategory(product.category)) {
       // Rings use a 45–75 slider, not a pick list — default to a common
       // middle size (52) so a price is visible right away.
@@ -481,8 +483,8 @@ export default function ProductPage() {
     }
   }, [product]);
 
-  // Keep the selected material photo in view when the shopper changes metal.
-  useEffect(() => { setActiveImg(0); }, [selectedVariant]);
+  // Keep the selected material or colour photo in view when the customer changes it.
+  useEffect(() => { setActiveImg(0); }, [selectedVariant, selectedColor]);
 
   if (!product) return (
     <>
@@ -525,9 +527,12 @@ export default function ProductPage() {
   // no slider driving it to a concrete figure (e.g. bracelets, necklaces).
   const isPriceRange = !product.hasCoupleOption && !ringSizePriceApplies && !!currentVariant?.priceMax && currentVariant.priceMax > currentVariant.price;
 
-  // A material photo takes precedence over the general product image, so a
-  // customer sees the exact Yellow, White, or Rose Gold piece they selected.
-  const images = [currentVariant?.image || product.image, product.image2].filter(Boolean) as string[];
+  const selectedColorVariant = product.colorVariants?.find(color => color.name === selectedColor);
+  // A colour gallery takes precedence, followed by a material photo and then
+  // the standard product images. This lets one product hold a full collection.
+  const images = selectedColorVariant?.images?.length
+    ? selectedColorVariant.images
+    : [currentVariant?.image || product.image, product.image2].filter(Boolean) as string[];
   const catLabel = CATEGORIES.find(c => c.key === product.category);
 
   const t = {
@@ -653,7 +658,7 @@ export default function ProductPage() {
         {/* LEFT: image */}
         <div className="product-gallery">
           <div className="product-main-image" style={{ background: '#faf8f5', position: 'relative', aspectRatio: '1', marginBottom: 14, overflow: 'hidden' }}>
-            <Image src={images[activeImg]} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
+            <Image src={images[activeImg] || images[0]} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
           </div>
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: 12 }}>
@@ -680,6 +685,19 @@ export default function ProductPage() {
             {product.name}
           </h1>
           <div style={{ width: 40, height: 1, background: '#e8e0d4', marginBottom: 28 }} />
+
+          {product.colorVariants && product.colorVariants.length > 0 && (
+            <div style={rowStyle}>
+              <span style={rowLabelStyle}>{language === 'sq' ? 'Ngjyra' : 'Colour'}</span>
+              <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {product.colorVariants.map(color => (
+                  <button key={color.name} onClick={() => setSelectedColor(color.name)} style={activeBtnStyle(selectedColor === color.name)}>
+                    {color.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* If couple option → show CoupleSection instead of standard selectors */}
           {product.hasCoupleOption ? (

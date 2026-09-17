@@ -16,6 +16,13 @@ export interface MaterialVariant {
   image?: string;
 }
 
+/** A named visual treatment, for collections offered in several gemstone or
+ * enamel colours. Each colour may carry an unlimited product gallery. */
+export interface ColorVariant {
+  name: string;
+  images: string[];
+}
+
 export type Category =
   | 'everyday-rings'
   | 'engagement-rings'
@@ -37,6 +44,7 @@ export interface Product {
   featured: boolean;
   materials: string[];
   materialVariants: MaterialVariant[];
+  colorVariants?: ColorVariant[];
   sizes: string[];
   sku?: string;
   stones?: string[];

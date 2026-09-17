@@ -21,6 +21,7 @@ function normaliseProduct(p: Product): Product {
   if (!result.materials)        result.materials = [];
   if (!result.sizes)            result.sizes = [];
   if (!result.materialVariants) result.materialVariants = [];
+  if (!result.colorVariants)    result.colorVariants = [];
   if (!result.stones)           result.stones = [];
   if (!result.stoneSizes)       result.stoneSizes = [];
   if ((result.category as string) === 'rings') result.category = 'everyday-rings';

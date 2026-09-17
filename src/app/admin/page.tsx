@@ -25,6 +25,7 @@ const EMPTY_PRODUCT: Omit<Product, 'id'> = {
   featured: false,
   materials: [],
   materialVariants: [],
+  colorVariants: [],
   sizes: [],
   sku: '',
   stones: [],
@@ -415,6 +416,7 @@ export default function AdminPage() {
       featured: p.featured,
       materials: p.materials || [],
       materialVariants: p.materialVariants || [],
+      colorVariants: p.colorVariants || [],
       sizes: p.sizes || [],
       sku: p.sku || '',
       stones: p.stones || [],
@@ -453,6 +455,10 @@ export default function AdminPage() {
         ? { priceMax: sanitizeNumber(v.priceMax, 0, 999999) }
         : {}),
     })).filter(v => v.name);
+    const cleanColorVariants = (form.colorVariants || []).map(color => ({
+      name: sanitizeText(color.name, 50),
+      images: (color.images || []).map(sanitizeUrl).filter(Boolean),
+    })).filter(color => color.name && color.images.length > 0);
 
     // Sanitize stone sizes
     const cleanStoneSizes = (form.stoneSizes || []).map(s => sanitizeText(s, 20)).filter(Boolean);
@@ -487,6 +493,7 @@ export default function AdminPage() {
         featured: Boolean(form.featured),
         materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
         materialVariants: cleanVariants,
+        colorVariants: cleanColorVariants,
         sizes: cleanSizes,
         sku: cleanSku || undefined,
         stones: cleanStones,
@@ -512,6 +519,7 @@ export default function AdminPage() {
               featured: Boolean(form.featured),
               materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
               materialVariants: cleanVariants,
+              colorVariants: cleanColorVariants,
               sizes: cleanSizes,
               sku: cleanSku || undefined,
               stones: cleanStones,
@@ -1577,6 +1585,48 @@ export default function AdminPage() {
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* Colour collection — free-form colour names with unlimited galleries */}
+                <div style={{ borderTop: '1px solid #e8e0d4', paddingTop: 20 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
+                    <div>
+                      <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 5 }}>
+                        {language === 'sq' ? 'Koleksioni i Ngjyrave' : 'Colour Collection'}
+                      </label>
+                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#aaa', lineHeight: 1.5 }}>
+                        {language === 'sq' ? 'Shtoni ngjyra sipas dëshirës dhe ngarkoni sa foto të doni për secilën.' : 'Add any colour name you need, then upload as many photos as you want for each colour.'}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => setForm({ ...form, colorVariants: [...(form.colorVariants || []), { name: '', images: [] }] })}
+                      style={{ flexShrink: 0, padding: '8px 12px', background: '#1a0a0a', border: 'none', color: '#fff', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                      + {language === 'sq' ? 'Ngjyrë' : 'Colour'}
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {(form.colorVariants || []).map((color, colorIndex) => (
+                      <div key={colorIndex} style={{ padding: 14, background: '#f7f3ee', border: '1px solid #e8e0d4' }}>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                          <input type="text" className="ds-input" value={color.name} placeholder={language === 'sq' ? 'p.sh. Smerald dhe Safir' : 'e.g. Emerald & Sapphire'}
+                            onChange={e => setForm({ ...form, colorVariants: (form.colorVariants || []).map((item, i) => i === colorIndex ? { ...item, name: e.target.value } : item) })} />
+                          <button type="button" aria-label="Remove colour" onClick={() => setForm({ ...form, colorVariants: (form.colorVariants || []).filter((_, i) => i !== colorIndex) })}
+                            style={{ width: 36, height: 36, border: '1px solid #e0caca', background: '#fff', color: '#a35', cursor: 'pointer', flexShrink: 0, fontSize: 18 }}>×</button>
+                        </div>
+                        {color.images.length > 0 && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 10, marginBottom: 10 }}>
+                            {color.images.map((image, imageIndex) => (
+                              <div key={imageIndex} style={{ position: 'relative' }}>
+                                <CloudinaryUploader currentUrl={image} onUploaded={url => setForm({ ...form, colorVariants: (form.colorVariants || []).map((item, i) => i === colorIndex ? { ...item, images: item.images.map((old, j) => j === imageIndex ? url : old) } : item) })} language={language} />
+                                <button type="button" onClick={() => setForm({ ...form, colorVariants: (form.colorVariants || []).map((item, i) => i === colorIndex ? { ...item, images: item.images.filter((_, j) => j !== imageIndex) } : item) })}
+                                  style={{ position: 'absolute', top: 6, right: 6, width: 26, height: 26, border: 'none', borderRadius: '50%', background: '#1a0a0a', color: '#fff', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <CloudinaryUploader currentUrl="" onUploaded={url => setForm({ ...form, colorVariants: (form.colorVariants || []).map((item, i) => i === colorIndex ? { ...item, images: [...item.images, url] } : item) })} label={language === 'sq' ? 'Shto një foto tjetër' : 'Add another photo'} language={language} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Sizes */}
