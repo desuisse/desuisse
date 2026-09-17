@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import Header from '@/components/Header';
 import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
@@ -58,7 +59,6 @@ export default function RingSizerPage() {
       'Measure your fingers at the end of the day when they are warmest.',
       'If your knuckle is significantly larger than the base of your finger, measure both and choose a size in between.',
     ],
-    photoPlaceholder: language === 'sq' ? 'Foto ilustruese' : 'Illustrative photo',
   };
 
   return (
@@ -143,15 +143,18 @@ export default function RingSizerPage() {
             </Reveal>
           </div>
 
-          {/* Right: photo placeholder + size chart */}
-          <div style={{ position: 'sticky', top: 100 }}>
+          {/* Right: measuring photo + size chart */}
+          <div className="ringsizer-reference" style={{ position: 'sticky', top: 100 }}>
             <Reveal delay={80}>
-              {/* Photo space */}
-              <div style={{ background: '#f7f3ee', border: '1px solid #e8e0d4', aspectRatio: '4/3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 32 }}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ddd" strokeWidth="1">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-                </svg>
-                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#ccc', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{t.photoPlaceholder}</p>
+              <div className="ringsizer-photo" style={{ position: 'relative', aspectRatio: '4/3', overflow: 'hidden', marginBottom: 32 }}>
+                <Image
+                  src="/images/ring-sizer-paper-measurement.png"
+                  alt={language === 'sq' ? 'Matja e madhësisë së unazës me letër' : 'Measuring a ring size with a paper strip'}
+                  fill
+                  sizes="(max-width: 900px) 100vw, 50vw"
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                  priority
+                />
               </div>
             </Reveal>
 
@@ -202,6 +205,11 @@ export default function RingSizerPage() {
       <style>{`
         @media (max-width: 900px) {
           .ringsizer-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+          .ringsizer-reference { position: static !important; max-width: 680px; margin: 0 auto; width: 100%; }
+        }
+        @media (max-width: 640px) {
+          .ringsizer-grid { gap: 32px !important; }
+          .ringsizer-photo { aspect-ratio: 1 / 1 !important; margin-bottom: 24px !important; }
         }
       `}</style>
       <Footer />
