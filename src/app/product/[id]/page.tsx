@@ -126,7 +126,9 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
   const getPrice = (variant: MaterialVariant | undefined, size: string) => variant ? priceForRingSize(variant, Number(size) || RING_SIZE_MIN) : 0;
 
   /* Formatter for the live price beside the slider thumb. */
-  const formatFor = (variant: MaterialVariant | undefined) => variant ? (n: number) => formatRingSizePrice(variant, n) : undefined;
+  const formatFor = (variant: MaterialVariant | undefined, surcharge = 0) => variant
+    ? (n: number) => `${(priceForRingSize(variant, n) + surcharge).toLocaleString('de-DE')}.00€`
+    : undefined;
 
   const womenPrice = womenEnabled ? getPrice(womenVariant, womenSize) : 0;
   const menPrice = menEnabled ? getPrice(menVariant, menSize) : 0;
@@ -163,7 +165,11 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
     size: string; setSize: (s: string) => void;
     price: number;
     isWomen: boolean;
-  }) => (
+  }) => {
+    // Stones belong to the women's ring, so show that exact configured price
+    // here as well as in the order total.
+    const displayedPrice = price + (isWomen ? stoneExtra : 0);
+    return (
     <div style={{ border: `1px solid ${enabled ? '#1a0a0a' : '#e8e0d4'}`, transition: 'border-color 0.2s' }}>
       {/* Header with checkbox */}
       <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: enabled ? '1px solid #e8e0d4' : 'none', background: enabled ? '#fff' : '#faf8f5', cursor: 'pointer' }} onClick={onToggle}>
@@ -172,7 +178,7 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
         </div>
         <h4 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', fontWeight: 400, color: enabled ? '#1a0a0a' : '#aaa', flex: 1 }}>{title}</h4>
         {enabled && price > 0 && (
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#1a0a0a' }}>{price.toLocaleString('de-DE')}.00€</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#1a0a0a' }}>{displayedPrice.toLocaleString('de-DE')}.00€</span>
         )}
       </div>
 
@@ -210,7 +216,7 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
             <RingSizeSlider
               value={Number(size) || RING_SIZE_MIN}
               onChange={s => setSize(String(s))}
-              formatPrice={formatFor(findVariant(material, carat))}
+              formatPrice={formatFor(findVariant(material, carat), isWomen ? stoneExtra : 0)}
             />
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#aaa', marginTop: 8 }}>{tl.sizeAdj}</p>
           </div>
@@ -231,7 +237,8 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{ borderTop: '1px solid #f0ebe3', paddingTop: 24, marginTop: 8 }}>
