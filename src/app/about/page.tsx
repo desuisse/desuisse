@@ -40,13 +40,17 @@ export default function AboutPage() {
             ))}
           </div>
           <div style={{ position: 'relative' }}>
+            {/* Served from /public, not the old WordPress site. The previous
+                src pointed at https://desuisse.com/wp-content/... which stopped
+                existing the moment the domain moved to this app — the About
+                page has been showing a broken image ever since. */}
             <Image
-              src="https://desuisse.com/wp-content/uploads/2023/12/AboutIMG.jpg"
-              alt="deSuisse History"
-              width={600}
-              height={700}
+              src="/images/about-founders.webp"
+              alt={t.about.title}
+              width={1000}
+              height={1000}
+              sizes="(max-width: 900px) 100vw, 560px"
               style={{ width: '100%', height: 'auto', display: 'block' }}
-              unoptimized
             />
             {/* Gold accent line */}
             <div style={{
