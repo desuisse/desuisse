@@ -397,6 +397,21 @@ export default function AdminPage() {
     }
   };
 
+  /**
+   * "Spectra" -> "Spectra 2" -> "Spectra 3" ... skipping names already taken,
+   * so duplicating the same model five times gives five distinct names rather
+   * than five products all called "Spectra (Copy)".
+   */
+  const nextCopyName = (base: string): string => {
+    const stem = base.replace(/\s+\d+$/, '').trim();
+    const taken = new Set(products.map(p => p.name.trim().toLowerCase()));
+    for (let n = 2; n < 200; n++) {
+      const candidate = `${stem} ${n}`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
+    return `${stem} ${Date.now()}`;
+  };
+
   const startAdd = () => {
     setForm(EMPTY_PRODUCT);
     setIsAdding(true);
@@ -427,6 +442,24 @@ export default function AdminPage() {
     });
     setEditing(p);
     setIsAdding(false);
+  };
+
+  /**
+   * Opens the ADD form pre-filled from an existing product.
+   *
+   * Deliberately nothing is written to the database here — the copy only
+   * exists once Save is pressed. That way swapping the photo first is the
+   * normal path, and abandoning a duplicate leaves no orphan behind.
+   *
+   * The SKU is cleared rather than copied: two products sharing a SKU is a
+   * stock-keeping problem that surfaces much later, in orders.
+   */
+  const startDuplicate = (p: Product) => {
+    startEdit(p);
+    setForm(prev => ({ ...prev, name: nextCopyName(p.name), sku: '' }));
+    setEditing(null);
+    setIsAdding(true);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSave = () => {
@@ -481,7 +514,7 @@ export default function AdminPage() {
     const cleanDescSq = sanitizeText(form.descriptionSq || '', LIMITS.DESCRIPTION);
     if (isAdding) {
       const newProduct: Product = {
-        id: Date.now().toString(),
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         name: cleanName,
         price: cleanPrice,
         priceMax: cleanPriceMax,
@@ -1289,13 +1322,21 @@ export default function AdminPage() {
                       </p>
                     </div>
 
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    {/* Actions — wraps rather than overflowing once there are
+                        three buttons on a narrow admin screen. */}
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       <button
                         onClick={() => startEdit(product)}
                         style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #1a0a0a', color: '#1a0a0a', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
                       >
                         Edit
+                      </button>
+                      <button
+                        onClick={() => startDuplicate(product)}
+                        title={t.admin.duplicateProduct}
+                        style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #c9a84c', color: '#9a7f30', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                      >
+                        {t.admin.duplicateProduct}
                       </button>
                       <button
                         onClick={() => handleDelete(product.id)}
