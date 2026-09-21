@@ -5,11 +5,13 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 import { sanitizeText, sanitizeEmail, sanitizePhone, LIMITS } from '@/lib/security';
+import { COUNTRY_CODES, PRIORITY_COUNTRIES, DEFAULT_DIAL, codeLabel } from '@/data/countryCodes';
 
 export default function ContactPage() {
   const { t } = useLanguage();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [dial, setDial] = useState(DEFAULT_DIAL);
   const [formError, setFormError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,8 +20,9 @@ export default function ContactPage() {
 
     const cleanName = sanitizeText(form.name, LIMITS.NAME);
     const cleanEmail = sanitizeEmail(form.email);
-    const cleanPhone = sanitizePhone(form.phone);
-    const cleanCompany = sanitizeText(form.company, LIMITS.COMPANY);
+    // The dial code is only meaningful with a number behind it, so an empty
+    // phone field stays empty rather than sending a bare '+383'.
+    const cleanPhone = form.phone.trim() ? sanitizePhone(`${dial} ${form.phone}`) : '';
     const cleanMessage = sanitizeText(form.message, LIMITS.MESSAGE);
 
     if (!cleanName) { setFormError('Please enter a valid name.'); return; }
@@ -30,7 +33,7 @@ export default function ContactPage() {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: cleanName, email: cleanEmail, phone: cleanPhone, company: cleanCompany, message: cleanMessage }),
+        body: JSON.stringify({ name: cleanName, email: cleanEmail, phone: cleanPhone, message: cleanMessage }),
       });
 
       if (res.status === 429) {
@@ -49,7 +52,8 @@ export default function ContactPage() {
       alert(t.contact.name === 'Emri Juaj'
         ? 'Mesazhi u dërgua! Do t\'ju kontaktojmë së shpejti.'
         : 'Message sent! We will get back to you soon.');
-      setForm({ name: '', email: '', phone: '', company: '', message: '' });
+      setForm({ name: '', email: '', phone: '', message: '' });
+      setDial(DEFAULT_DIAL);
     } catch {
       setFormError('Connection error. Please check your internet and try again.');
     }
@@ -104,22 +108,37 @@ export default function ContactPage() {
                 maxLength={LIMITS.EMAIL}
                 required
               />
-              <input
-                type="tel" inputMode="tel" pattern="[0-9+\-\s()]+"
-                placeholder={t.contact.phone}
-                className="ds-input"
-                value={form.phone}
-                onChange={e => setForm({ ...form, phone: e.target.value.replace(/[^0-9+\-\s()]/g, '') })}
-                maxLength={LIMITS.PHONE}
-              />
-              <input
-                type="text"
-                placeholder={t.contact.company}
-                className="ds-input"
-                value={form.company}
-                onChange={e => setForm({ ...form, company: e.target.value })}
-                maxLength={LIMITS.COMPANY}
-              />
+              {/* Phone: country dial code + local number. Kept as two controls
+                  so the customer never has to know their own country's prefix. */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <select
+                  className="ds-input"
+                  aria-label="Country dialling code"
+                  value={dial}
+                  onChange={e => setDial(e.target.value)}
+                  style={{ width: 132, flexShrink: 0, cursor: 'pointer' }}
+                >
+                  <optgroup label="—">
+                    {PRIORITY_COUNTRIES.map(c => (
+                      <option key={`top-${c.iso}`} value={c.dial}>{codeLabel(c)}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="A–Z">
+                    {COUNTRY_CODES.map(c => (
+                      <option key={c.iso} value={c.dial}>{codeLabel(c)}</option>
+                    ))}
+                  </optgroup>
+                </select>
+                <input
+                  type="tel" inputMode="tel" pattern="[0-9+\-\s()]+"
+                  placeholder={t.contact.phone}
+                  className="ds-input"
+                  value={form.phone}
+                  onChange={e => setForm({ ...form, phone: e.target.value.replace(/[^0-9+\-\s()]/g, '') })}
+                  maxLength={LIMITS.PHONE}
+                  style={{ flex: 1, minWidth: 0 }}
+                />
+              </div>
               <textarea
                 placeholder={t.contact.message}
                 className="ds-textarea"

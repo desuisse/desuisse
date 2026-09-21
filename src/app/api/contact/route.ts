@@ -96,8 +96,7 @@ export async function POST(req: NextRequest) {
   const b = body as Record<string, unknown>;
   const name    = sanitize(b.name, 100);
   const email   = sanitize(b.email, 254).toLowerCase();
-  const phone   = typeof b.phone === 'string' ? b.phone.slice(0, 20).replace(/[^0-9+\-\s()]/g, '') : '';
-  const company = sanitize(b.company, 100);
+  const phone   = typeof b.phone === 'string' ? b.phone.slice(0, 32).replace(/[^0-9+\-\s()]/g, '') : '';
   const message = sanitize(b.message, 2000);
   const type    = sanitize(b.type, 20) || 'contact';
 
@@ -114,7 +113,6 @@ export async function POST(req: NextRequest) {
   const eName = escapeHtml(name);
   const eEmail = escapeHtml(email);
   const ePhone = escapeHtml(phone);
-  const eCompany = escapeHtml(company);
   const eMessage = escapeHtml(message).replace(/\n/g, '<br>');
 
   const html = `
@@ -132,8 +130,6 @@ export async function POST(req: NextRequest) {
             <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px"><a href="mailto:${eEmail}" style="color:#c9a84c">${eEmail}</a></td></tr>
         ${phone ? `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:12px">PHONE</td>
             <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;color:#1a0a0a">${ePhone}</td></tr>` : ''}
-        ${company ? `<tr><td style="padding:10px 0;border-bottom:1px solid #eee;color:#888;font-size:12px">COMPANY</td>
-            <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;color:#1a0a0a">${eCompany}</td></tr>` : ''}
       </table>
       <div style="margin-top:24px;padding:16px;background:#f7f3ee;border-left:3px solid #c9a84c">
         <p style="margin:0 0 8px;color:#888;font-size:12px;text-transform:uppercase;letter-spacing:1px">MESSAGE</p>

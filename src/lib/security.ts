@@ -30,7 +30,7 @@ export function sanitizeEmail(input: string): string {
 
 export function sanitizePhone(input: string): string {
   if (typeof input !== 'string') return '';
-  return input.slice(0, 20).replace(/[^0-9+\-\s()]/g, '').trim();
+  return input.slice(0, 32).replace(/[^0-9+\-\s()]/g, '').trim();
 }
 
 /** Only allow http/https URLs (no javascript:, data:, file: etc.). */
@@ -100,7 +100,7 @@ export function isValidCVV(input: string): boolean {
 export const LIMITS = {
   NAME: 100,
   EMAIL: 254,
-  PHONE: 20,
+  PHONE: 32,   // dial code + local number, e.g. '+383 44 123 456'
   ADDRESS: 200,
   CITY: 100,
   ZIP: 20,
