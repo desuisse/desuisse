@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 import { sanitizeText, sanitizeEmail, sanitizePhone, LIMITS } from '@/lib/security';
 import { COUNTRY_CODES, PRIORITY_COUNTRIES, DEFAULT_DIAL, codeLabel } from '@/data/countryCodes';
+import { CONTACT } from '@/data/contact';
 
 export default function ContactPage() {
   const { t } = useLanguage();
@@ -210,8 +211,14 @@ export default function ContactPage() {
                   <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#999', marginBottom: 4 }}>
                     {t.contact.phoneLabel}
                   </p>
-                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#1a0a0a' }}>987-654-3210</p>
-                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: '#1a0a0a' }}>info@desuisse.com</p>
+                  {/* Real links, not text: on a phone these are one tap to
+                      call or to open the mail app. */}
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14, marginBottom: 2 }}>
+                    <a href={CONTACT.phoneHref} style={{ color: '#1a0a0a', textDecoration: 'none' }}>{CONTACT.phone}</a>
+                  </p>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 14 }}>
+                    <a href={CONTACT.emailHref} style={{ color: '#1a0a0a', textDecoration: 'none' }}>{CONTACT.email}</a>
+                  </p>
                 </div>
               </div>
 

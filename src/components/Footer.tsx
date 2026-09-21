@@ -16,6 +16,7 @@
 
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
+import { CONTACT } from '@/data/contact';
 
 const FB_URL = 'https://www.facebook.com/artdesuisse?locale=cs_CZ';
 const INSTA_URL = 'https://www.instagram.com/desuisse__/';
@@ -120,7 +121,7 @@ export default function Footer() {
               Stará Louka 335/48<br />
               360 01, Czechia
             </p>
-            <a href="tel:+38348233400" className="footer-link">+383 48 233 400</a>
+            <a href={CONTACT.phoneHref} className="footer-link">{CONTACT.phone}</a>
           </div>
         </div>
 
