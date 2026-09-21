@@ -40,16 +40,28 @@ export default function CustomDesignPage() {
       ? 'Nga skica deri te unaza e përfunduar — si i bëjmë bizhuteritë tona.'
       : 'From sketch to finished ring — how our pieces are made.',
     scheduleBtn: language === 'sq' ? 'CAKTO NJË TAKIM' : 'SCHEDULE A MEETING',
-    customersTitle: language === 'sq' ? 'Klientë të Kënaqur' : 'Satisfied Customers',
+    // These are campaign photographs of models, NOT photographs of customers.
+    // The heading used to read "Satisfied Customers" / "Klientë të Kënaqur",
+    // which told visitors these people had bought from deSuisse and were
+    // happy — a claim the pictures cannot support. Real customer photos, with
+    // their permission, can carry that heading; these cannot.
+    customersTitle: language === 'sq' ? 'Stili deSuisse' : 'The deSuisse Look',
     galleryTitle: language === 'sq' ? 'Punimet Tona' : 'Our Work',
     photoNote: language === 'sq' ? 'Shtoni foton' : 'Add photo',
   };
 
-  // 8 photo placeholders (2 rows of 4)
-  const photos = Array.from({ length: 8 }, (_, i) => ({
-    id: i + 1,
-    file: `custom-${i + 1}.jpg`,
-  }));
+  // Campaign photography, 2 rows of 4. Swap a file in /public/images/ under a
+  // NEW name when you replace one — /images is cached immutable for a year.
+  const photos = [
+    { id: 1, file: 'look-1.webp', en: 'Diamond stud earring worn with an ivory blouse',            sq: 'Vath diamanti i veshur me bluzë të bardhë' },
+    { id: 2, file: 'look-2.webp', en: 'A diamond bracelet being tried on in the boutique',         sq: 'Byzylyk me diamante duke u provuar në boutique' },
+    { id: 3, file: 'look-3.webp', en: 'A couple wearing their gold wedding bands',                 sq: 'Një çift me unazat e tyre të martesës prej ari' },
+    { id: 4, file: 'look-4.webp', en: 'Leaving the boutique with a deSuisse box',                  sq: 'Duke dalë nga boutique me një kuti deSuisse' },
+    { id: 5, file: 'look-5.webp', en: 'An engagement ring on a newly engaged hand',                sq: 'Unazë fejese në dorën e sapofejuar' },
+    { id: 6, file: 'look-6.webp', en: 'A diamond pendant necklace worn with silk',                 sq: 'Qafore me varëse diamanti e veshur me mëndafsh' },
+    { id: 7, file: 'look-7.webp', en: 'A gold band worn with a tailored suit',                     sq: 'Unazë ari e veshur me kostum' },
+    { id: 8, file: 'look-8.webp', en: 'A pear-cut solitaire shown on the hand',                    sq: 'Solitaire në formë dardhe i shfaqur në dorë' },
+  ];
 
   return (
     <>
@@ -132,11 +144,14 @@ export default function CustomDesignPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             {photos.map(photo => (
               <Reveal key={photo.id} delay={photo.id * 50}>
-                <div style={{ aspectRatio: '1', background: '#e8e0d4', border: '1px dashed #d4c9bc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, overflow: 'hidden', position: 'relative' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 9, color: '#ccc', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center', padding: '0 8px' }}>
-                    {t.photoNote}<br/>public/images/{photo.file}
-                  </p>
+                <div style={{ aspectRatio: '1', background: '#e8e0d4', overflow: 'hidden', position: 'relative' }}>
+                  <Image
+                    src={`/images/${photo.file}`}
+                    alt={language === 'sq' ? photo.sq : photo.en}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 320px"
+                    style={{ objectFit: 'cover' }}
+                  />
                 </div>
               </Reveal>
             ))}
