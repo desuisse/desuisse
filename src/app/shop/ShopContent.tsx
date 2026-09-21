@@ -11,6 +11,15 @@ import { fetchProducts, Product, MATERIAL_OPTIONS, CATEGORIES } from '@/data/pro
 
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc';
 
+/**
+ * How many products the grid shows before the "Load more" button appears,
+ * and how many more each click reveals. Every product is already in memory
+ * (the whole catalogue arrives in one /api/products call), so this is purely
+ * about not dropping a wall of 60+ cards on a shopper at once — and about
+ * not making a phone render and lay out every image on first paint.
+ */
+const PAGE_SIZE = 20;
+
 export default function ShopContent() {
   const { language } = useLanguage();
   const searchParams = useSearchParams();
@@ -21,6 +30,7 @@ export default function ShopContent() {
   const [maxPrice, setMaxPrice] = useState(10000);
   const [sortBy, setSortBy] = useState<SortOption>('default');
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const t = {
     title: language === 'sq' ? 'Dyqani' : 'Shop',
@@ -42,6 +52,9 @@ export default function ShopContent() {
     viewAll: language === 'sq' ? 'Shih të gjitha produktet' : 'View all products',
     filters: language === 'sq' ? 'Filtrat' : 'Filters',
     applyFilters: language === 'sq' ? 'Apliko Filtrat' : 'Apply Filters',
+    loadMore: language === 'sq' ? 'Shfaq më shumë' : 'Load More',
+    showing: language === 'sq' ? 'Duke shfaqur' : 'Showing',
+    of: language === 'sq' ? 'nga' : 'of',
   };
 
   useEffect(() => {
@@ -79,6 +92,16 @@ export default function ShopContent() {
     if (sortBy === 'name-asc') result = [...result].sort((a, b) => a.name.localeCompare(b.name));
     return result;
   }, [products, activeCategory, activeMaterials, priceRange, sortBy]);
+
+  // Any filter or sort change makes a different result set, so the grid has
+  // to start from the first page again — otherwise switching category while
+  // 60 products are expanded would show 60 of the new category too.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [activeCategory, activeMaterials, priceRange, sortBy]);
+
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = filtered.length > visibleCount;
 
   const resetFilters = () => {
     setActiveCategory('all');
@@ -230,9 +253,48 @@ export default function ShopContent() {
                 }}
               />
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 20 }}>
-                {filtered.map(product => <ProductCard key={product.id} product={product} />)}
-              </div>
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 20 }}>
+                  {visible.map(product => <ProductCard key={product.id} product={product} />)}
+                </div>
+
+                {hasMore && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, marginTop: 56 }}>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999', letterSpacing: '0.08em' }}>
+                      {t.showing} {visible.length} {t.of} {filtered.length}
+                    </p>
+                    <div style={{ width: 40, height: 1, background: '#e8e0d4' }} />
+                    <button
+                      onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+                      style={{
+                        padding: '14px 52px',
+                        background: 'transparent',
+                        color: '#1a0a0a',
+                        border: '1px solid #1a0a0a',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: '0.18em',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        transition: 'background 0.25s, color 0.25s, border-color 0.25s',
+                      }}
+                      onMouseEnter={e => {
+                        const b = e.currentTarget as HTMLButtonElement;
+                        b.style.background = '#1a0a0a';
+                        b.style.color = '#fff';
+                      }}
+                      onMouseLeave={e => {
+                        const b = e.currentTarget as HTMLButtonElement;
+                        b.style.background = 'transparent';
+                        b.style.color = '#1a0a0a';
+                      }}
+                    >
+                      {t.loadMore}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
