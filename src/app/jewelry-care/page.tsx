@@ -41,10 +41,18 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
  * Filenames under /images are cached immutable for a year (next.config.js),
  * so a replacement photo needs a NEW filename, not the same one re-uploaded.
  */
-const SECTION_PHOTOS: ({ src: string; alt: { en: string; sq: string } } | null)[] = [
-  null,
+const SECTION_PHOTOS: ({ src: string; w: number; h: number; alt: { en: string; sq: string } } | null)[] = [
+  {
+    src: '/images/care-daily.webp',
+    w: 900, h: 675,
+    alt: {
+      en: 'Polishing a gold solitaire ring with a soft deSuisse cloth',
+      sq: 'Lustrimi i një unaze solitaire ari me një leckë të butë deSuisse',
+    },
+  },
   {
     src: '/images/care-cleaning.webp',
+    w: 900, h: 900,
     alt: {
       en: 'The deSuisse care kit — ring box, cleaning spray, soft brush and polishing cloth',
       sq: 'Seti i kujdesit deSuisse — kutia e unazës, sprej pastrues, furçë e butë dhe leckë lustrimi',
@@ -251,8 +259,8 @@ export default function JewelryCare() {
                     <Image
                       src={SECTION_PHOTOS[si]!.src}
                       alt={language === 'sq' ? SECTION_PHOTOS[si]!.alt.sq : SECTION_PHOTOS[si]!.alt.en}
-                      width={900}
-                      height={900}
+                      width={SECTION_PHOTOS[si]!.w}
+                      height={SECTION_PHOTOS[si]!.h}
                       sizes="(max-width: 900px) 100vw, 320px"
                       style={{ width: '100%', height: 'auto', display: 'block', border: '1px solid #e8e0d4' }}
                     />
