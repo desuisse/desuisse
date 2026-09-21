@@ -164,6 +164,11 @@ export function formatVariantPrice(variant: MaterialVariant): string {
 const euro = (n: number) => `${Math.round(n).toLocaleString('de-DE')}.00€`;
 
 /**
+ * The price range a product is actually sold at — the numbers behind the
+ * figure on the card. Filtering and sorting MUST use this rather than the
+ * raw `price` field, or the shop quietly filters on one number while
+ * showing the customer a different one.
+ *
  * The one figure shown wherever a product is listed.
  *
  * Material prices are per band. A couple piece is bought as a pair, so its
@@ -174,7 +179,7 @@ const euro = (n: number) => `${Math.round(n).toLocaleString('de-DE')}.00€`;
  * that have no materials configured; anything with materials is quoted from
  * them, so the catalogue can never disagree with the product page.
  */
-export function formatPrice(product: Product): string {
+export function getPriceRange(product: Product): { min: number; max: number } {
   const bands = product.hasCoupleOption ? 2 : 1;
   const defaultVariant = getDefaultVariant(product);
 
@@ -183,13 +188,16 @@ export function formatPrice(product: Product): string {
     const max = (defaultVariant.priceMax && defaultVariant.priceMax > defaultVariant.price
       ? defaultVariant.priceMax
       : defaultVariant.price) * bands;
-    return max > min ? `${euro(min)} – ${euro(max)}` : euro(min);
+    return { min, max };
   }
 
-  if (product.priceMax && product.priceMax > product.price) {
-    return `${euro(product.price)} – ${euro(product.priceMax)}`;
-  }
-  return euro(product.price);
+  const max = product.priceMax && product.priceMax > product.price ? product.priceMax : product.price;
+  return { min: product.price, max };
+}
+
+export function formatPrice(product: Product): string {
+  const { min, max } = getPriceRange(product);
+  return max > min ? `${euro(min)} – ${euro(max)}` : euro(min);
 }
 
 export const RING_CATEGORIES: Category[] = ['everyday-rings', 'exclusive-models', 'engagement-rings', 'wedding-rings'];

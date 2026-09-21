@@ -7,7 +7,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import EmptyState from '@/components/EmptyState';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, MATERIAL_OPTIONS, CATEGORIES } from '@/data/products';
+import { fetchProducts, Product, MATERIAL_OPTIONS, CATEGORIES, getPriceRange } from '@/data/products';
 
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc';
 
@@ -19,6 +19,9 @@ type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc';
  * not making a phone render and lay out every image on first paint.
  */
 const PAGE_SIZE = 20;
+
+/** Slider granularity, in euros. */
+const PRICE_STEP = 50;
 
 export default function ShopContent() {
   const { language } = useLanguage();
@@ -55,13 +58,18 @@ export default function ShopContent() {
     loadMore: language === 'sq' ? 'Shfaq më shumë' : 'Load More',
     showing: language === 'sq' ? 'Duke shfaqur' : 'Showing',
     of: language === 'sq' ? 'nga' : 'of',
+    priceFrom: language === 'sq' ? 'Nga' : 'From',
+    priceTo: language === 'sq' ? 'Deri' : 'To',
   };
 
   useEffect(() => {
     fetchProducts().then(all => {
       setProducts(all);
-      const max = Math.max(...all.map(p => p.priceMax || p.price), 1000);
-      const rounded = Math.ceil(max / 100) * 100;
+      // Ceiling comes from the quoted price (materials, couple bands), not the
+      // raw price field — otherwise the slider tops out below the most
+      // expensive ring on the page and it can never be shown.
+      const max = Math.max(...all.map(p => getPriceRange(p).max), 1000);
+      const rounded = Math.ceil(max / PRICE_STEP) * PRICE_STEP;
       setMaxPrice(rounded);
       setPriceRange([0, rounded]);
     });
@@ -84,11 +92,15 @@ export default function ShopContent() {
           ? p.category !== 'engagement-rings' && p.category !== 'wedding-rings'
           : p.category === activeCategory;
       const matchMat = activeMaterials.length === 0 || (p.materials && p.materials.some(m => activeMaterials.includes(m)));
-      const matchPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
+      // A product is a match when its own price range OVERLAPS the chosen one.
+      // A ring quoted 600–800 belongs in a 0–700 budget: part of it is
+      // affordable. Testing a single number would hide it entirely.
+      const { min: pMin, max: pMax } = getPriceRange(p);
+      const matchPrice = pMax >= priceRange[0] && pMin <= priceRange[1];
       return matchCat && matchMat && matchPrice;
     });
-    if (sortBy === 'price-asc') result = [...result].sort((a, b) => a.price - b.price);
-    if (sortBy === 'price-desc') result = [...result].sort((a, b) => b.price - a.price);
+    if (sortBy === 'price-asc') result = [...result].sort((a, b) => getPriceRange(a).min - getPriceRange(b).min);
+    if (sortBy === 'price-desc') result = [...result].sort((a, b) => getPriceRange(b).max - getPriceRange(a).max);
     if (sortBy === 'name-asc') result = [...result].sort((a, b) => a.name.localeCompare(b.name));
     return result;
   }, [products, activeCategory, activeMaterials, priceRange, sortBy]);
@@ -115,7 +127,12 @@ export default function ShopContent() {
     letterSpacing: '0.18em', textTransform: 'uppercase', color: '#1a0a0a', marginBottom: 14,
   };
 
-  // Sidebar content — reused in both desktop sidebar and mobile drawer
+  // Sidebar content — reused in both desktop sidebar and mobile drawer.
+  // IMPORTANT: this is CALLED as a function below, never mounted as
+  // <SidebarContent />. Mounting it would give React a brand-new component
+  // type on every render, remounting every input underneath it — which tore
+  // the focus out of the slider mid-drag and made the price filter feel
+  // broken. Calling it inlines the JSX and the DOM nodes survive.
   const SidebarContent = () => (
     <div>
       {/* Categories */}
@@ -148,16 +165,47 @@ export default function ShopContent() {
 
       <div style={{ borderTop: '1px solid #e8e0d4', marginBottom: 28 }} />
 
-      {/* Price range */}
+      {/* Price range — two handles, so a shopper can set a floor as well as a
+          ceiling. The old single handle could only ever answer "under X". */}
       <div style={{ marginBottom: 28 }}>
         <p style={sectionTitle}>{t.filterPrice}</p>
-        <input type="range" min={0} max={maxPrice} step={50} value={priceRange[1]}
-          onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
-          style={{ width: '100%', accentColor: '#1a0a0a', marginBottom: 10 }}
-        />
-        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#666' }}>
-          {t.price}: <strong>{priceRange[0]}€</strong> — <strong>{priceRange[1]}€</strong>
-        </p>
+
+        <div className="ds-range-wrap">
+          <div className="ds-range-track" />
+          <div
+            className="ds-range-fill"
+            style={{
+              left: `${(priceRange[0] / maxPrice) * 100}%`,
+              width: `${((priceRange[1] - priceRange[0]) / maxPrice) * 100}%`,
+            }}
+          />
+          <input
+            className="ds-range" type="range" min={0} max={maxPrice} step={PRICE_STEP}
+            aria-label={`${t.priceFrom} ${priceRange[0]} EUR`}
+            value={priceRange[0]}
+            onChange={e => {
+              const v = Math.min(Number(e.target.value), priceRange[1] - PRICE_STEP);
+              setPriceRange([Math.max(0, v), priceRange[1]]);
+            }}
+          />
+          <input
+            className="ds-range" type="range" min={0} max={maxPrice} step={PRICE_STEP}
+            aria-label={`${t.priceTo} ${priceRange[1]} EUR`}
+            value={priceRange[1]}
+            onChange={e => {
+              const v = Math.max(Number(e.target.value), priceRange[0] + PRICE_STEP);
+              setPriceRange([priceRange[0], Math.min(maxPrice, v)]);
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 8 }}>
+          <span className="ds-range-chip">{priceRange[0].toLocaleString('de-DE')}€</span>
+          <span style={{ flex: 1, height: 1, background: '#e8e0d4' }} />
+          <span className="ds-range-chip">
+            {priceRange[1].toLocaleString('de-DE')}€{priceRange[1] >= maxPrice ? '+' : ''}
+          </span>
+        </div>
       </div>
 
       <button onClick={resetFilters} style={{ width: '100%', padding: '12px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
@@ -189,7 +237,7 @@ export default function ShopContent() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
               </button>
             </div>
-            <SidebarContent />
+            {SidebarContent()}
             <button onClick={() => setFilterDrawerOpen(false)} className="btn-dark" style={{ width: '100%', textAlign: 'center', marginTop: 16 }}>
               {t.applyFilters}
             </button>
@@ -228,7 +276,7 @@ export default function ShopContent() {
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 0 }} className="shop-layout">
           {/* Desktop sidebar */}
           <aside style={{ padding: '32px 24px', borderRight: '1px solid #e8e0d4', position: 'sticky', top: 73, alignSelf: 'start', maxHeight: 'calc(100vh - 73px)', overflowY: 'auto' }} className="shop-sidebar">
-            <SidebarContent />
+            {SidebarContent()}
           </aside>
 
           {/* Products grid */}
@@ -304,6 +352,42 @@ export default function ShopContent() {
 
       <style>{`
         @keyframes slideInLeft { from { transform: translateX(-100%) } to { transform: translateX(0) } }
+
+        /* Dual-handle price slider. Both inputs are stacked on the same track;
+           the inputs ignore pointer events so clicks fall through to whichever
+           THUMB is under the cursor, which is what makes two handles usable. */
+        .ds-range-wrap { position: relative; height: 26px; }
+        .ds-range-track,
+        .ds-range-fill { position: absolute; top: 11px; height: 3px; border-radius: 2px; }
+        .ds-range-track { left: 0; right: 0; background: #e8e0d4; }
+        .ds-range-fill  { background: #1a0a0a; }
+        .ds-range {
+          position: absolute; top: 0; left: 0;
+          width: 100%; height: 26px; margin: 0;
+          background: none; pointer-events: none;
+          -webkit-appearance: none; appearance: none;
+        }
+        .ds-range:focus { outline: none; }
+        .ds-range::-webkit-slider-runnable-track { height: 26px; background: none; border: none; }
+        .ds-range::-webkit-slider-thumb {
+          -webkit-appearance: none; appearance: none; pointer-events: auto;
+          width: 16px; height: 16px; margin-top: 5px;
+          border-radius: 50%; background: #fff; border: 1px solid #1a0a0a;
+          box-shadow: 0 1px 3px rgba(26,10,10,0.25); cursor: grab;
+        }
+        .ds-range::-webkit-slider-thumb:active { cursor: grabbing; background: #c9a84c; }
+        .ds-range::-moz-range-track { height: 26px; background: none; border: none; }
+        .ds-range::-moz-range-thumb {
+          pointer-events: auto;
+          width: 14px; height: 14px;
+          border-radius: 50%; background: #fff; border: 1px solid #1a0a0a;
+          box-shadow: 0 1px 3px rgba(26,10,10,0.25); cursor: grab;
+        }
+        .ds-range-chip {
+          font-family: var(--font-sans); font-size: 12px; font-weight: 600;
+          color: #1a0a0a; background: #faf8f5; border: 1px solid #e8e0d4;
+          padding: 5px 10px; white-space: nowrap;
+        }
         @media (max-width: 768px) {
           .shop-layout { grid-template-columns: 1fr !important; }
           .shop-sidebar { display: none !important; }
