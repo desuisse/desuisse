@@ -58,7 +58,14 @@ const SECTION_PHOTOS: ({ src: string; w: number; h: number; alt: { en: string; s
       sq: 'Seti i kujdesit deSuisse — kutia e unazës, sprej pastrues, furçë e butë dhe leckë lustrimi',
     },
   },
-  null,
+  {
+    src: '/images/care-storage.webp',
+    w: 900, h: 675,
+    alt: {
+      en: 'A lined jewellery box with separate compartments for a ring, bracelet, earrings and necklace, beside a soft pouch',
+      sq: 'Kuti bizhuterish me ndarje të veçanta për unazë, byzylyk, vathë dhe qafore, pranë një qeseje të butë',
+    },
+  },
 ];
 
 export default function JewelryCare() {
