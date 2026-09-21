@@ -399,19 +399,19 @@ function DesuisseBox({ language }: { language: string }) {
         </div>
       </div>
 
-      {/* Right side: elegant box illustration — transparent background */}
-      <div style={{ aspectRatio: '4/3', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e8e0d4', position: 'relative', background: '#faf8f5' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 90, height: 90, border: '1px solid #c9a84c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="0.8">
-              <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
-              <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-              <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-            </svg>
-          </div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/desuisse-logo.png" alt="deSuisse" style={{ height: 36, width: 'auto', display: 'block', opacity: 0.5 }} />
-        </div>
+      {/* Right side: the real packaging photo. Square source in a 4:3 frame,
+          so `cover` crops the silk at top and bottom rather than letterboxing
+          the boxes — the bag, box and card all stay in view. */}
+      <div style={{ aspectRatio: '4/3', border: '1px solid #e8e0d4', position: 'relative', overflow: 'hidden', background: '#faf8f5' }}>
+        <Image
+          src="/images/desuisse-box.webp"
+          alt={language === 'sq'
+            ? 'Paketimi deSuisse — kutia, çanta dhuratë dhe certifikata'
+            : 'deSuisse packaging — the box, gift bag and certificate card'}
+          fill
+          sizes="(max-width: 900px) 100vw, 640px"
+          style={{ objectFit: 'cover' }}
+        />
       </div>
     </div>
   );
