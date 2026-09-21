@@ -168,7 +168,16 @@ export default function ShopContent() {
       {/* Price range — two handles, so a shopper can set a floor as well as a
           ceiling. The old single handle could only ever answer "under X". */}
       <div style={{ marginBottom: 28 }}>
-        <p style={sectionTitle}>{t.filterPrice}</p>
+        <p style={{ ...sectionTitle, marginBottom: 4 }}>{t.filterPrice}</p>
+
+        {/* The figures sit ABOVE the slider on purpose. The sidebar scrolls
+            inside itself on a short window, and anything below the slider was
+            the first thing clipped out of view — which read as "the price
+            filter has no prices". Above the track, they are visible the
+            moment the section is. */}
+        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#1a0a0a', marginBottom: 12 }}>
+          {priceRange[0].toLocaleString('de-DE')}€ – {priceRange[1].toLocaleString('de-DE')}€{priceRange[1] >= maxPrice ? '+' : ''}
+        </p>
 
         <div className="ds-range-wrap">
           <div className="ds-range-track" />
@@ -198,17 +207,9 @@ export default function ShopContent() {
             }}
           />
         </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 8 }}>
-          <span className="ds-range-chip">{priceRange[0].toLocaleString('de-DE')}€</span>
-          <span style={{ flex: 1, height: 1, background: '#e8e0d4' }} />
-          <span className="ds-range-chip">
-            {priceRange[1].toLocaleString('de-DE')}€{priceRange[1] >= maxPrice ? '+' : ''}
-          </span>
-        </div>
       </div>
 
-      <button onClick={resetFilters} style={{ width: '100%', padding: '12px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
+      <button onClick={resetFilters} style={{ position: 'sticky', bottom: 0, width: '100%', padding: '12px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
         onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#c9a84c'}
         onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#1a0a0a'}
       >
@@ -382,11 +383,6 @@ export default function ShopContent() {
           width: 14px; height: 14px;
           border-radius: 50%; background: #fff; border: 1px solid #1a0a0a;
           box-shadow: 0 1px 3px rgba(26,10,10,0.25); cursor: grab;
-        }
-        .ds-range-chip {
-          font-family: var(--font-sans); font-size: 12px; font-weight: 600;
-          color: #1a0a0a; background: #faf8f5; border: 1px solid #e8e0d4;
-          padding: 5px 10px; white-space: nowrap;
         }
         @media (max-width: 768px) {
           .shop-layout { grid-template-columns: 1fr !important; }
