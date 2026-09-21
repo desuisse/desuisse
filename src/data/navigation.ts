@@ -137,7 +137,6 @@ export const NAV_ITEMS: NavItem[] = [
         en: 'Shop by Category',
         sq: 'Blini sipas Kategorisë',
         links: [
-          { href: '/shop', en: 'All Jewellery', sq: 'Të Gjitha Bizhuteritë' },
           { href: '/shop?category=everyday-rings', en: 'Everyday Rings', sq: 'Unaza të Përditshme' },
           { href: '/shop?category=exclusive-models', en: 'Exclusive Models', sq: 'Modele Ekskluzive', isNew: true },
           { href: '/shop?category=earrings', en: 'Earrings', sq: 'Vathë' },
