@@ -80,7 +80,7 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'images' | 'backups'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'featured' | 'orders' | 'images' | 'backups'>('products');
   const [page, setPage] = useState(1);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -674,6 +674,48 @@ export default function AdminPage() {
     });
   };
 
+  /** The homepage carousel is exactly this: featured products, in array order. */
+  const featuredProducts = products.filter(p => p.featured);
+
+  /** Save + surface the real error, the one way every mutation does it. */
+  const persistProducts = (updated: Product[]) => {
+    setProducts(updated);
+    saveProductsToDb(updated).then(result => {
+      if (result.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1500);
+      } else {
+        alert(`Could not save: ${result.error || 'unknown error'}`);
+        fetchProducts().then(setProducts);
+      }
+    });
+  };
+
+  const setFeatured = (id: string, value: boolean) => {
+    persistProducts(products.map(p => (p.id === id ? { ...p, featured: value } : p)));
+  };
+
+  /**
+   * Reorders within the FEATURED list. The homepage reads products in array
+   * order and keeps the featured ones, so moving a featured product past the
+   * next featured one is what actually changes the carousel — stepping one
+   * slot in the raw array would usually move it past a non-featured product
+   * and appear to do nothing.
+   */
+  const moveFeatured = (id: string, direction: -1 | 1) => {
+    const i = featuredProducts.findIndex(p => p.id === id);
+    const neighbour = featuredProducts[i + direction];
+    if (i === -1 || !neighbour) return;
+
+    const from = products.findIndex(p => p.id === id);
+    const to = products.findIndex(p => p.id === neighbour.id);
+    if (from === -1 || to === -1) return;
+
+    const updated = [...products];
+    [updated[from], updated[to]] = [updated[to], updated[from]];
+    persistProducts(updated);
+  };
+
   const visibleOrders = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
   const orderSummary = summarise(orders);
   const statusLabel = (status: OrderStatus) => (language === 'sq' ? STATUS_META[status].sq : STATUS_META[status].en);
@@ -800,7 +842,7 @@ export default function AdminPage() {
         {/* Tab bar */}
         <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0 }}>
           <div className="admin-tabbar-tabs" style={{ display: 'flex' }}>
-            {(['products', 'orders', 'images', 'backups'] as const).map(tab => (
+            {(['products', 'featured', 'orders', 'images', 'backups'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{
                 padding: '18px 24px', background: 'none', border: 'none',
                 borderBottom: `2px solid ${activeTab === tab ? '#c9a84c' : 'transparent'}`,
@@ -810,6 +852,8 @@ export default function AdminPage() {
               }}>
                 {tab === 'products'
                   ? `${t.admin.products} (${products.length})`
+                  : tab === 'featured'
+                  ? `${language === 'sq' ? 'Kryefaqja' : 'Homepage'} (${products.filter(p => p.featured).length})`
                   : tab === 'orders'
                     ? `${language === 'sq' ? 'Porositë' : 'Orders'}${orders.length ? ` (${orders.length})` : ''}`
                     : tab === 'images'
@@ -1100,6 +1144,120 @@ export default function AdminPage() {
             >
               {language === 'sq' ? 'RUAJ FOTOT' : 'SAVE IMAGES'}
             </button>
+          </div>
+        )}
+
+        {/* ── HOMEPAGE (FEATURED) TAB ── */}
+        {activeTab === 'featured' && (
+          <div style={{ padding: '32px', maxWidth: 900 }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#888', marginBottom: 24, lineHeight: 1.75 }}>
+              {language === 'sq'
+                ? 'Këto produkte shfaqen në karuselin e kryefaqes, sipas radhës së mëposhtme. Karuseli shfaq 3 njëkohësisht — mbani të paktën 3.'
+                : 'These products appear in the homepage carousel, in the order below. The carousel shows 3 at a time — keep at least 3 here.'}
+            </p>
+
+            {/* Add to the homepage */}
+            <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                className="ds-input"
+                value=""
+                onChange={e => { if (e.target.value) setFeatured(e.target.value, true); }}
+                style={{ flex: 1, minWidth: 240, cursor: 'pointer' }}
+              >
+                <option value="">
+                  {language === 'sq' ? '+ Shto një produkt në kryefaqe…' : '+ Add a product to the homepage…'}
+                </option>
+                {products.filter(p => !p.featured).map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} — {categoryLabels[p.category]}
+                  </option>
+                ))}
+              </select>
+              {saved && (
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#27ae60' }}>✓ Saved!</span>
+              )}
+            </div>
+
+            {featuredProducts.length === 0 ? (
+              <div style={{ border: '1px dashed #e8e0d4', padding: '40px 24px', textAlign: 'center' }}>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#999' }}>
+                  {language === 'sq'
+                    ? 'Asnjë produkt në kryefaqe — seksioni i karuselit nuk do të shfaqet fare.'
+                    : 'Nothing on the homepage yet — the carousel section will not render at all.'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {featuredProducts.map((product, i) => (
+                  <div key={product.id} style={{ display: 'flex', alignItems: 'center', gap: 14, border: '1px solid #e8e0d4', background: '#fff', padding: '12px 14px' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#c9a84c', fontWeight: 700, width: 20, flexShrink: 0 }}>
+                      {i + 1}
+                    </span>
+
+                    {product.image
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={product.image} alt="" style={{ width: 46, height: 46, objectFit: 'cover', flexShrink: 0, background: '#f7f3ee' }} />
+                      : <div style={{ width: 46, height: 46, background: '#f7f3ee', flexShrink: 0 }} />}
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1a0a0a' }}>{product.name}</p>
+                      <p style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
+                        {categoryLabels[product.category]} · {formatPrice(product)}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {([-1, 1] as const).map(dir => {
+                          const disabled = !featuredProducts[i + dir];
+                          return (
+                            <button
+                              key={dir}
+                              onClick={() => moveFeatured(product.id, dir)}
+                              disabled={disabled}
+                              title={dir === -1 ? t.admin.moveUp : t.admin.moveDown}
+                              aria-label={dir === -1 ? t.admin.moveUp : t.admin.moveDown}
+                              style={{
+                                width: 26, height: 18, lineHeight: '16px', padding: 0, background: 'transparent',
+                                border: '1px solid ' + (disabled ? '#eee' : '#e8e0d4'),
+                                color: disabled ? '#ddd' : '#666', fontSize: 9,
+                                cursor: disabled ? 'default' : 'pointer',
+                              }}
+                            >
+                              {dir === -1 ? '▲' : '▼'}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() => { startEdit(product); setActiveTab('products'); }}
+                        style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #1a0a0a', color: '#1a0a0a', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                      >
+                        Edit
+                      </button>
+
+                      {/* Removes it from the homepage only. The product itself
+                          stays in the catalogue — this is not a delete. */}
+                      <button
+                        onClick={() => setFeatured(product.id, false)}
+                        style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #e8e0d4', color: '#888', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
+                      >
+                        {language === 'sq' ? 'Hiq' : 'Remove'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {featuredProducts.length > 0 && featuredProducts.length < 3 && (
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#c0392b', marginTop: 20 }}>
+                {language === 'sq'
+                  ? '⚠ Karuseli shfaq 3 produkte njëkohësisht — me më pak se 3 do të duket i zbrazët.'
+                  : '⚠ The carousel shows 3 at a time — with fewer than 3 it will look empty.'}
+              </p>
+            )}
           </div>
         )}
 
