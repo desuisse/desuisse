@@ -53,7 +53,7 @@ export default function ShopContent() {
       setPriceRange([0, rounded]);
     });
     const cat = searchParams.get('category');
-    const validCategories = ['all', 'everyday-rings', 'engagement-rings', 'wedding-rings', 'earrings', 'bracelets', 'necklaces'];
+    const validCategories = ['all', 'everyday-rings', 'exclusive-models', 'engagement-rings', 'wedding-rings', 'earrings', 'bracelets', 'necklaces'];
     if (cat && validCategories.includes(cat)) setActiveCategory(cat);
   }, [searchParams]);
 

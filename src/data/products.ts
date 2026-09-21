@@ -25,6 +25,7 @@ export interface ColorVariant {
 
 export type Category =
   | 'everyday-rings'
+  | 'exclusive-models'
   | 'engagement-rings'
   | 'wedding-rings'
   | 'earrings'
@@ -73,6 +74,7 @@ export const ENGRAVING_SYMBOLS = ['♡','♥','∞','✦','✶','☆','★','◆
 
 export const CATEGORIES: { key: Category; en: string; sq: string }[] = [
   { key: 'everyday-rings',   en: 'Everyday Rings',   sq: 'Unaza të Përditshme' },
+  { key: 'exclusive-models', en: 'Exclusive Models',  sq: 'Modele Ekskluzive' },
   { key: 'engagement-rings', en: 'Engagement Rings', sq: 'Unaza Fejese' },
   { key: 'wedding-rings',    en: 'Wedding Rings',    sq: 'Unaza Martese' },
   { key: 'earrings',         en: 'Earrings',         sq: 'Vathë' },
@@ -190,7 +192,7 @@ export function formatPrice(product: Product): string {
   return euro(product.price);
 }
 
-export const RING_CATEGORIES: Category[] = ['everyday-rings', 'engagement-rings', 'wedding-rings'];
+export const RING_CATEGORIES: Category[] = ['everyday-rings', 'exclusive-models', 'engagement-rings', 'wedding-rings'];
 export function isRingCategory(category: Category): boolean {
   return RING_CATEGORIES.includes(category);
 }
