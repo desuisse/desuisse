@@ -142,8 +142,19 @@ export async function POST(req: NextRequest) {
   `;
 
   const emailResult = await sendEmail(subject, html, email);
+
+  // A failed send used to fall through to `success: true`. The customer was
+  // told "Message sent!", the enquiry went nowhere, and nobody found out —
+  // every contact made while RESEND_API_KEY was unset was lost in silence.
+  // Failing loudly is the only honest option: the customer can then phone or
+  // use WhatsApp instead of waiting for a reply that will never come.
   if (!emailResult.ok) {
     console.error('[contact] Email failed:', emailResult.error);
+    return NextResponse.json({
+      error: 'We could not send your message right now. Please call us or write to info@desuisse.com.',
+      detail: emailResult.error,
+    }, { status: 502 });
   }
+
   return NextResponse.json({ success: true }, { status: 200 });
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -13,6 +13,28 @@ export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
   const [dial, setDial] = useState(DEFAULT_DIAL);
   const [formError, setFormError] = useState('');
+
+  /**
+   * A product page can send someone here to ask about a piece we quote on
+   * request (?about=Spectra — Diamond). Pre-filling the message means the
+   * customer does not have to remember which ring they were looking at, and
+   * we do not get "how much is the gold one with the stone?".
+   *
+   * Read from window.location rather than useSearchParams: this page is not
+   * wrapped in a Suspense boundary, and useSearchParams would force one.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const about = new URLSearchParams(window.location.search).get('about');
+    if (!about) return;
+    const clean = about.slice(0, 120).replace(/[<>]/g, '');
+    setForm(prev => prev.message ? prev : {
+      ...prev,
+      message: t.contact.name === 'Emri Juaj'
+        ? `Përshëndetje, dëshiroj një ofertë për: ${clean}.`
+        : `Hello, I would like a quote for: ${clean}.`,
+    });
+  }, [t.contact.name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +68,14 @@ export default function ContactPage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setFormError((data as Record<string, string>).error ?? 'Something went wrong. Please try again.');
+        return;
+      }
+
+      const payload = await res.json().catch(() => ({}));
+      if (!(payload as Record<string, unknown>).success) {
+        setFormError(t.contact.name === 'Emri Juaj'
+          ? 'Mesazhi nuk u dërgua. Ju lutem na telefononi ose na shkruani në info@desuisse.com.'
+          : 'Your message was not sent. Please call us or write to info@desuisse.com.');
         return;
       }
 

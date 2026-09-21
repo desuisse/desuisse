@@ -10,10 +10,70 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
 import FeatureCards, { FeatureItem } from '@/components/FeatureCards';
 import { sanitizeEngraving } from '@/lib/security';
+
+/**
+ * The chip for a stone we quote on request (today: natural diamond).
+ *
+ * It is a LINK, not a selector — picking it would imply a price we are not
+ * publishing. Hovering explains why; clicking goes to the contact form with
+ * the piece and stone already named, so the customer does not have to
+ * describe which ring they meant.
+ */
+function EnquiryStoneChip({ productName, stone, language, style }: {
+  productName: string;
+  stone: string;
+  language: string;
+  style: React.CSSProperties;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const sq = language === 'sq';
+
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      <Link
+        href={enquiryHref(productName, stone)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setHovered(true)}
+        onBlur={() => setHovered(false)}
+        style={{
+          ...style,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          textDecoration: 'none',
+          borderColor: hovered ? '#c9a84c' : (style.borderColor as string) || '#e8e0d4',
+        }}
+      >
+        {stone}
+        <span style={{ opacity: 0.7, fontSize: 11, whiteSpace: 'nowrap' }}>
+          {sq ? 'me kërkesë' : 'on request'}
+        </span>
+      </Link>
+
+      {hovered && (
+        <span
+          role="tooltip"
+          style={{
+            position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, zIndex: 20,
+            width: 232, padding: '10px 12px',
+            background: '#1a0a0a', color: '#fff',
+            fontFamily: 'var(--font-sans)', fontSize: 11, lineHeight: 1.6,
+            boxShadow: '0 6px 20px rgba(26,10,10,0.25)',
+          }}
+        >
+          {sq
+            ? 'Diamantët natyralë çmohen individualisht. Na shkruani një email për një ofertë — klikoni për të na kontaktuar.'
+            : 'Natural diamonds are priced individually. Write to us for a quote — click to contact us.'}
+        </span>
+      )}
+    </span>
+  );
+}
 
 // ── Engraving section ────────────────────────────────────────
 function EngravingSection({ language, onEngravingChange }: {
@@ -228,7 +288,9 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
             <div>
               <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.stone}</p>
               <div style={{ ...choiceGridStyle, marginBottom: product.stoneSizes?.length ? 16 : 0 }}>
-                {product.stones.map(stone => <button key={stone} onClick={() => setSelectedStone(stone === selectedStone ? '' : stone)} style={variantBtn(stone === selectedStone)}>{stone}</button>)}
+                {product.stones.map(stone => isEnquiryStone(stone)
+                  ? <EnquiryStoneChip key={stone} productName={product.name} stone={stone} language={language} style={variantBtn(false)} />
+                  : <button key={stone} onClick={() => setSelectedStone(stone === selectedStone ? '' : stone)} style={variantBtn(stone === selectedStone)}>{stone}</button>)}
               </div>
               {product.stoneSizes && product.stoneSizes.length > 0 && <>
                 <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.stoneSize}</p>
@@ -471,7 +533,9 @@ export default function ProductPage() {
       const def = getDefaultVariant(product);
       if (def) setSelectedVariant(def.name);
     }
-    if (product.stones?.length === 1)           setSelectedStone(product.stones[0]);
+    // An enquiry stone must never be auto-selected — it would put a price
+    // on the ring that we are explicitly not quoting.
+    if (product.stones?.length === 1 && !isEnquiryStone(product.stones[0])) setSelectedStone(product.stones[0]);
     if (product.stoneSizes?.length === 1)       setSelectedStoneSize(product.stoneSizes[0]);
     if (product.colorVariants?.length)          setSelectedColor(product.colorVariants[0].name);
     if (isRingCategory(product.category)) {
@@ -598,6 +662,9 @@ export default function ProductPage() {
                   // Show what each stone costs on the chip itself, so the
                   // customer can compare without clicking through all three.
                   const extra = getStoneSurcharge(product, s);
+                  if (isEnquiryStone(s)) {
+                    return <EnquiryStoneChip key={s} productName={product.name} stone={s} language={language} style={activeBtnStyle(false)} />;
+                  }
                   return (
                     <button key={s} onClick={() => setSelectedStone(s === selectedStone ? '' : s)} style={activeBtnStyle(selectedStone === s)}>
                       {s}
@@ -614,7 +681,9 @@ export default function ProductPage() {
             <div style={rowStyle}>
               <span style={rowLabelStyle}>{t.stone}</span>
               <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
-                {product.stones[0]}
+                {isEnquiryStone(product.stones[0])
+                  ? <EnquiryStoneChip productName={product.name} stone={product.stones[0]} language={language} style={activeBtnStyle(false)} />
+                  : product.stones[0]}
               </div>
             </div>
           )}

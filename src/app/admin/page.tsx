@@ -637,6 +637,43 @@ export default function AdminPage() {
     currentPage * PRODUCTS_PER_PAGE,
   );
 
+  /**
+   * Moves a product one place up or down in the catalogue.
+   *
+   * The shop renders products in the order they sit in this array (the
+   * "Default" sort), so swapping two entries here is what puts two related
+   * models side by side on the storefront.
+   *
+   * The swap is done against the neighbour IN THE CURRENT FILTERED VIEW, not
+   * the raw array. With a category filter on, "up" then means "above the
+   * previous ring in this category" — what the operator actually sees —
+   * rather than jumping over hidden products from other categories.
+   */
+  const moveProduct = (id: string, direction: -1 | 1) => {
+    const viewIndex = filtered.findIndex(p => p.id === id);
+    if (viewIndex === -1) return;
+    const neighbour = filtered[viewIndex + direction];
+    if (!neighbour) return;
+
+    const from = products.findIndex(p => p.id === id);
+    const to = products.findIndex(p => p.id === neighbour.id);
+    if (from === -1 || to === -1) return;
+
+    const updated = [...products];
+    [updated[from], updated[to]] = [updated[to], updated[from]];
+    setProducts(updated);
+
+    saveProductsToDb(updated).then(result => {
+      if (result.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1500);
+      } else {
+        alert(`Could not save the new order: ${result.error || 'unknown error'}`);
+        fetchProducts().then(setProducts);
+      }
+    });
+  };
+
   const visibleOrders = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
   const orderSummary = summarise(orders);
   const statusLabel = (status: OrderStatus) => (language === 'sq' ? STATUS_META[status].sq : STATUS_META[status].en);
@@ -1324,7 +1361,35 @@ export default function AdminPage() {
 
                     {/* Actions — wraps rather than overflowing once there are
                         three buttons on a narrow admin screen. */}
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      {/* Catalogue order. Disabled at the ends of the list so
+                          a click that would do nothing looks like it does
+                          nothing. */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {([-1, 1] as const).map(dir => {
+                          const viewIndex = filtered.findIndex(p => p.id === product.id);
+                          const disabled = viewIndex === -1 || !filtered[viewIndex + dir];
+                          return (
+                            <button
+                              key={dir}
+                              onClick={() => moveProduct(product.id, dir)}
+                              disabled={disabled}
+                              title={dir === -1 ? t.admin.moveUp : t.admin.moveDown}
+                              aria-label={dir === -1 ? t.admin.moveUp : t.admin.moveDown}
+                              style={{
+                                width: 26, height: 18, lineHeight: '16px', padding: 0,
+                                background: 'transparent',
+                                border: '1px solid ' + (disabled ? '#eee' : '#e8e0d4'),
+                                color: disabled ? '#ddd' : '#666',
+                                fontSize: 9,
+                                cursor: disabled ? 'default' : 'pointer',
+                              }}
+                            >
+                              {dir === -1 ? '▲' : '▼'}
+                            </button>
+                          );
+                        })}
+                      </div>
                       <button
                         onClick={() => startEdit(product)}
                         style={{ padding: '6px 14px', background: 'transparent', border: '1px solid #1a0a0a', color: '#1a0a0a', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}

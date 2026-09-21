@@ -246,6 +246,26 @@ export function getStoneSurcharge(
   return Math.round(value);
 }
 
+/**
+ * Stones quoted individually instead of carried at a listed price.
+ *
+ * Natural diamonds move with the market and the stock actually in the safe,
+ * so publishing a number means either quoting high enough to lose the sale or
+ * low enough to lose money. These are offered as an enquiry: the option is
+ * still shown — the customer must be able to see that the ring CAN be made
+ * with a diamond — but it links to the contact form rather than a price.
+ */
+export const ENQUIRY_STONES = ['Diamond'];
+
+export function isEnquiryStone(stone: string | null | undefined): boolean {
+  return Boolean(stone) && ENQUIRY_STONES.includes(stone as string);
+}
+
+/** Contact-form link carrying what the customer was looking at. */
+export function enquiryHref(productName: string, stone: string): string {
+  return `/contact?about=${encodeURIComponent(`${productName} — ${stone}`)}`;
+}
+
 /** '+1.800€' for a positive surcharge, empty string for none. */
 export function formatStoneSurcharge(amount: number): string {
   return amount > 0 ? `+${amount.toLocaleString('de-DE')}€` : '';

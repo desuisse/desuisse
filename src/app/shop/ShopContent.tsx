@@ -209,7 +209,7 @@ export default function ShopContent() {
         </div>
       </div>
 
-      <button onClick={resetFilters} style={{ position: 'sticky', bottom: 0, width: '100%', padding: '12px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
+      <button onClick={resetFilters} style={{ width: '100%', padding: '12px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
         onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#c9a84c'}
         onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#1a0a0a'}
       >
@@ -276,7 +276,14 @@ export default function ShopContent() {
         {/* Main layout: sidebar (desktop) + products */}
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 0 }} className="shop-layout">
           {/* Desktop sidebar */}
-          <aside style={{ padding: '32px 24px', borderRight: '1px solid #e8e0d4', position: 'sticky', top: 73, alignSelf: 'start', maxHeight: 'calc(100vh - 73px)', overflowY: 'auto' }} className="shop-sidebar">
+          {/* Deliberately NOT sticky with its own scrollbar. It used to be
+              `position: sticky` + `maxHeight: calc(100vh - 73px)` +
+              `overflow-y: auto`, which on a short window hid the price figures
+              and the Reset button below a fold nobody could reach — the wheel
+              scrolls the page, not the sidebar, when the cursor is over the
+              grid. Scrolling with the page means every filter is always
+              reachable, at any window height. */}
+          <aside style={{ padding: '32px 24px', borderRight: '1px solid #e8e0d4' }} className="shop-sidebar">
             {SidebarContent()}
           </aside>
 
