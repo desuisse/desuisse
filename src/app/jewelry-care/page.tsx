@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Header from '@/components/Header';
 import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
@@ -29,6 +30,28 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
     </div>
   );
 }
+
+/**
+ * Photos for the section columns, indexed to match the `sections` arrays
+ * below (0 = Daily Protection, 1 = Cleaning at Home, 2 = Storage Tips).
+ * `null` keeps the dashed "add a photo" placeholder for that section.
+ *
+ * Kept out of the `data` object on purpose: the photo is the same in both
+ * languages, so storing it once means EN and SQ can never fall out of sync.
+ * Filenames under /images are cached immutable for a year (next.config.js),
+ * so a replacement photo needs a NEW filename, not the same one re-uploaded.
+ */
+const SECTION_PHOTOS: ({ src: string; alt: { en: string; sq: string } } | null)[] = [
+  null,
+  {
+    src: '/images/care-cleaning.webp',
+    alt: {
+      en: 'The deSuisse care kit — ring box, cleaning spray, soft brush and polishing cloth',
+      sq: 'Seti i kujdesit deSuisse — kutia e unazës, sprej pastrues, furçë e butë dhe leckë lustrimi',
+    },
+  },
+  null,
+];
 
 export default function JewelryCare() {
   const { language } = useLanguage();
@@ -222,7 +245,19 @@ export default function JewelryCare() {
                   ))}
                 </div>
 
-                {/* Photo placeholder */}
+                {/* Section photo — real image when we have one, dashed placeholder until then */}
+                {SECTION_PHOTOS[si] ? (
+                  <div style={{ position: 'sticky', top: 100 }}>
+                    <Image
+                      src={SECTION_PHOTOS[si]!.src}
+                      alt={language === 'sq' ? SECTION_PHOTOS[si]!.alt.sq : SECTION_PHOTOS[si]!.alt.en}
+                      width={900}
+                      height={900}
+                      sizes="(max-width: 900px) 100vw, 320px"
+                      style={{ width: '100%', height: 'auto', display: 'block', border: '1px solid #e8e0d4' }}
+                    />
+                  </div>
+                ) : (
                 <div style={{
                   position: 'sticky',
                   top: 100,
@@ -251,6 +286,7 @@ export default function JewelryCare() {
                     </p>
                   </div>
                 </div>
+                )}
 
               </div>
             </div>
