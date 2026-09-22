@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
@@ -58,6 +59,10 @@ export default function ShopContent() {
     loadMore: language === 'sq' ? 'Shfaq më shumë' : 'Load More',
     showing: language === 'sq' ? 'Duke shfaqur' : 'Showing',
     of: language === 'sq' ? 'nga' : 'of',
+    chooseHeading: language === 'sq' ? 'Zgjidhni një kategori' : 'Choose a category',
+    chooseSub: language === 'sq'
+      ? 'Shfletoni koleksionin sipas llojit.'
+      : 'Browse the collection by type.',
     priceFrom: language === 'sq' ? 'Nga' : 'From',
     priceTo: language === 'sq' ? 'Deri' : 'To',
   };
@@ -116,7 +121,10 @@ export default function ShopContent() {
   const hasMore = filtered.length > visibleCount;
 
   const resetFilters = () => {
-    setActiveCategory('all');
+    // Deliberately keeps the chosen category. Clearing it would send the
+    // shopper back to the category chooser, which reads as the filters having
+    // thrown them out of the collection they were browsing.
+    
     setActiveMaterials([]);
     setPriceRange([0, maxPrice]);
     setSortBy('default');
@@ -247,7 +255,9 @@ export default function ShopContent() {
       )}
 
       <div style={{ maxWidth: 1400, margin: '0 auto' }}>
-        {/* Sort bar — always visible */}
+        {/* Sort bar — hidden on the chooser, where "96 products" and a sort
+            order would be announcing the very list we are not showing. */}
+        {activeCategory !== 'all' && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderBottom: '1px solid #e8e0d4', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {/* Filter button — shows on all sizes, opens drawer on mobile */}
@@ -272,8 +282,49 @@ export default function ShopContent() {
             </select>
           </div>
         </div>
+        )}
 
-        {/* Main layout: sidebar (desktop) + products */}
+        {/* No category chosen → a chooser, not the whole catalogue. The shop
+            is deliberately not browsable as one undivided list: every link on
+            the site points at /shop?category=…, and those all still work. */}
+        {activeCategory === 'all' ? (
+          <div style={{ padding: '56px 24px 80px', maxWidth: 900, margin: '0 auto' }}>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', fontWeight: 400, color: '#1a0a0a', textAlign: 'center', marginBottom: 10 }}>
+              {t.chooseHeading}
+            </h2>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#888', textAlign: 'center', marginBottom: 40 }}>
+              {t.chooseSub}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
+              {CATEGORIES.map(cat => (
+                <Link
+                  key={cat.key}
+                  href={`/shop?category=${cat.key}`}
+                  onClick={() => setActiveCategory(cat.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    padding: '20px 22px', border: '1px solid #e8e0d4', background: '#fff',
+                    fontFamily: 'var(--font-sans)', fontSize: 14, color: '#1a0a0a',
+                    textDecoration: 'none', transition: 'border-color 0.2s, transform 0.2s',
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLAnchorElement;
+                    el.style.borderColor = '#c9a84c';
+                    el.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLAnchorElement;
+                    el.style.borderColor = '#e8e0d4';
+                    el.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <span>{language === 'sq' ? cat.sq : cat.en}</span>
+                  <span style={{ color: '#c9a84c' }}>→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : (
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 0 }} className="shop-layout">
           {/* Desktop sidebar */}
           {/* Deliberately NOT sticky with its own scrollbar. It used to be
@@ -354,6 +405,7 @@ export default function ShopContent() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       <Footer />
