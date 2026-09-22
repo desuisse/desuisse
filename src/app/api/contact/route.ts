@@ -56,9 +56,16 @@ async function sendEmail(subject: string, html: string, replyTo: string): Promis
     });
 
     if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({})) as Record<string, unknown>;
       console.error('[contact] Resend error:', res.status, data);
-      return { ok: false, error: `Resend ${res.status}` };
+      // Carry Resend's OWN message through. `Resend 422` told us the request
+      // was rejected but not why — and "why" is the whole diagnostic (an
+      // unverified domain, a from-address that isn't on it, a bad recipient).
+      // The message names no key and no customer data, so it is safe to return.
+      const reason = typeof data.message === 'string' ? data.message
+        : typeof data.error === 'string' ? data.error
+        : JSON.stringify(data).slice(0, 300);
+      return { ok: false, error: `Resend ${res.status}: ${reason}` };
     }
     return { ok: true };
   } catch (err) {
