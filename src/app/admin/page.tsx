@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
+import { PricingRules, DEFAULT_PRICING_RULES, applyCaratRule, ruleForCategory, describeRule } from '@/data/pricingRules';
 import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, formatPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
 import { Order, OrderStatus, ORDER_STATUSES, summarise } from '@/lib/orders';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
@@ -80,7 +81,10 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'featured' | 'orders' | 'images' | 'backups'>('products');
+  const [pricingRules, setPricingRules] = useState<PricingRules>(DEFAULT_PRICING_RULES);
+  const [rulesSaved, setRulesSaved] = useState(false);
+  const [ruleCategory, setRuleCategory] = useState<Product['category']>('wedding-rings');
+  const [activeTab, setActiveTab] = useState<'products' | 'featured' | 'pricing' | 'orders' | 'images' | 'backups'>('products');
   const [page, setPage] = useState(1);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -219,6 +223,12 @@ export default function AdminPage() {
   // Load backups when the tab opens
   useEffect(() => {
     if (activeTab === 'backups' && isLoggedIn) loadBackups();
+    if (isLoggedIn) {
+      fetch('/api/pricing-rules', { cache: 'no-store' })
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => { if (d && typeof d === 'object') setPricingRules(d as PricingRules); })
+        .catch(() => { /* keep defaults */ });
+    }
   }, [activeTab, isLoggedIn]);
 
   // ── Orders ────────────────────────────────────────────────────────────
@@ -716,6 +726,68 @@ export default function AdminPage() {
     persistProducts(updated);
   };
 
+  const saveRules = (next: PricingRules) => {
+    setPricingRules(next);
+    fetch('/api/pricing-rules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(next),
+    })
+      .then(async r => {
+        if (r.ok) {
+          setRulesSaved(true);
+          setTimeout(() => setRulesSaved(false), 1800);
+        } else {
+          const body = await r.json().catch(() => ({}));
+          alert(`Could not save the formulas: ${(body as Record<string, string>).error || r.status}`);
+        }
+      })
+      .catch(() => alert('Network error while saving the formulas.'));
+  };
+
+  const activeRule = ruleForCategory(pricingRules, form.category);
+
+  /**
+   * Fills Min/Max for the carat variants the operator has ALREADY selected.
+   *
+   * Two deliberate limits:
+   *  • only materials already ticked are touched, so pressing this never
+   *    publishes a metal the boutique cannot actually make;
+   *  • Silver and Platinum are skipped — they carry no carat, so the 14ct/18ct
+   *    rule says nothing about them and a guess would be worse than a blank.
+   */
+  const applyFormula = () => {
+    if (!activeRule) return;
+    const baseMin = Number(form.price) || 0;
+    const baseMax = form.priceMax && form.priceMax > baseMin ? Number(form.priceMax) : baseMin;
+    if (baseMin <= 0) {
+      alert(language === 'sq'
+        ? 'Vendosni së pari çmimin bazë (Min) lart.'
+        : 'Set the base Price (Min) above first.');
+      return;
+    }
+
+    let touched = 0;
+    const updated = (form.materialVariants || []).map(v => {
+      const carat = Object.keys(activeRule.carats).find(c => v.name.endsWith(` ${c}`));
+      if (!carat) return v;                     // Silver / Platinum / unknown carat
+      const rule = activeRule.carats[carat];
+      touched++;
+      const min = applyCaratRule(baseMin, rule);
+      const max = applyCaratRule(baseMax, rule);
+      return { ...v, price: min, priceMax: max > min ? max : undefined };
+    });
+
+    if (touched === 0) {
+      alert(language === 'sq'
+        ? 'Asnjë material me karat nuk është zgjedhur — zgjidhni p.sh. Yellow Gold 14ct më poshtë.'
+        : 'No carat materials are selected — tick e.g. Yellow Gold 14ct below first.');
+      return;
+    }
+    setForm({ ...form, materialVariants: updated });
+  };
+
   const visibleOrders = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
   const orderSummary = summarise(orders);
   const statusLabel = (status: OrderStatus) => (language === 'sq' ? STATUS_META[status].sq : STATUS_META[status].en);
@@ -842,7 +914,7 @@ export default function AdminPage() {
         {/* Tab bar */}
         <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0 }}>
           <div className="admin-tabbar-tabs" style={{ display: 'flex' }}>
-            {(['products', 'featured', 'orders', 'images', 'backups'] as const).map(tab => (
+            {(['products', 'featured', 'pricing', 'orders', 'images', 'backups'] as const).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} style={{
                 padding: '18px 24px', background: 'none', border: 'none',
                 borderBottom: `2px solid ${activeTab === tab ? '#c9a84c' : 'transparent'}`,
@@ -854,6 +926,8 @@ export default function AdminPage() {
                   ? `${t.admin.products} (${products.length})`
                   : tab === 'featured'
                   ? `${language === 'sq' ? 'Kryefaqja' : 'Homepage'} (${products.filter(p => p.featured).length})`
+                  : tab === 'pricing'
+                  ? (language === 'sq' ? 'Formulat e Çmimeve' : 'Price Formulas')
                   : tab === 'orders'
                     ? `${language === 'sq' ? 'Porositë' : 'Orders'}${orders.length ? ` (${orders.length})` : ''}`
                     : tab === 'images'
@@ -1261,6 +1335,113 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ── PRICE FORMULAS TAB ── */}
+        {activeTab === 'pricing' && (
+          <div style={{ padding: '32px', maxWidth: 760 }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#888', marginBottom: 8, lineHeight: 1.75 }}>
+              {language === 'sq'
+                ? 'Një formulë kursen shtypjen: vendosni çmimin bazë te produkti, zgjidhni materialet, dhe butoni “Apliko formulën” plotëson Min/Max për secilin karat.'
+                : 'A formula saves typing: set the base price on the product, tick the materials, and the “Apply formula” button fills Min/Max for each carat.'}
+            </p>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#c9a84c', marginBottom: 28, lineHeight: 1.75 }}>
+              {language === 'sq'
+                ? 'Ndryshimi i një formule NUK prek produktet e ruajtura më parë — ato mbajnë çmimet e tyre derisa të shtypni sërish butonin.'
+                : 'Changing a formula does NOT touch products you already saved — they keep their prices until you press the button again.'}
+            </p>
+
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
+              <select
+                className="ds-input"
+                value={ruleCategory}
+                onChange={e => setRuleCategory(e.target.value as Product['category'])}
+                style={{ minWidth: 220, cursor: 'pointer' }}
+              >
+                {CATEGORIES.map(c => (
+                  <option key={c.key} value={c.key}>{language === 'sq' ? c.sq : c.en}</option>
+                ))}
+              </select>
+              {rulesSaved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#27ae60' }}>✓ Saved!</span>}
+            </div>
+
+            {(() => {
+              const rule = pricingRules[ruleCategory] ?? { enabled: false, carats: {} };
+              const write = (next: typeof rule) => saveRules({ ...pricingRules, [ruleCategory]: next });
+
+              return (
+                <div style={{ border: '1px solid #e8e0d4', background: '#fff', padding: '20px 22px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 20 }}>
+                    <input
+                      type="checkbox"
+                      checked={rule.enabled}
+                      onChange={e => write({ ...rule, enabled: e.target.checked })}
+                      style={{ width: 16, height: 16, accentColor: '#c9a84c', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#1a0a0a' }}>
+                      {language === 'sq' ? 'Aktivizo formulën për këtë kategori' : 'Use a formula for this category'}
+                    </span>
+                  </label>
+
+                  {rule.enabled && (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 12, marginBottom: 8 }}>
+                        <span />
+                        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                          {language === 'sq' ? 'Pjesëto me' : 'Divide by'}
+                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                          {language === 'sq' ? 'Shto €' : 'Then add €'}
+                        </span>
+                      </div>
+
+                      {CARATS.map(carat => {
+                        const cr = rule.carats[carat] ?? { divisor: 2, offset: 0 };
+                        const writeCarat = (patch: Partial<typeof cr>) =>
+                          write({ ...rule, carats: { ...rule.carats, [carat]: { ...cr, ...patch } } });
+                        return (
+                          <div key={carat} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 1fr', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#1a0a0a' }}>{carat}</span>
+                            <input
+                              type="number" className="ds-input" min="0.01" step="0.5" value={cr.divisor}
+                              onChange={e => writeCarat({ divisor: Number(e.target.value) || 1 })}
+                            />
+                            <input
+                              type="number" className="ds-input" step="10" value={cr.offset}
+                              onChange={e => writeCarat({ offset: Number(e.target.value) || 0 })}
+                            />
+                          </div>
+                        );
+                      })}
+
+                      {/* A worked example beats a paragraph of explanation. */}
+                      <div style={{ borderTop: '1px solid #e8e0d4', marginTop: 18, paddingTop: 16 }}>
+                        <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>
+                          {language === 'sq' ? 'Shembull — bazë 900€ – 1.100€' : 'Example — base 900€ – 1.100€'}
+                        </p>
+                        {CARATS.map(carat => {
+                          const cr = rule.carats[carat] ?? { divisor: 2, offset: 0 };
+                          return (
+                            <p key={carat} style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#666', marginBottom: 4 }}>
+                              {carat} <span style={{ color: '#bbb' }}>({describeRule(cr)})</span> →{' '}
+                              <strong style={{ color: '#1a0a0a' }}>
+                                {applyCaratRule(900, cr).toLocaleString('de-DE')}€ – {applyCaratRule(1100, cr).toLocaleString('de-DE')}€
+                              </strong>
+                            </p>
+                          );
+                        })}
+                        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#bbb', marginTop: 10, lineHeight: 1.6 }}>
+                          {language === 'sq'
+                            ? 'Argjendi dhe platini nuk kanë karat — mbeten bosh dhe i vendosni vetë.'
+                            : 'Silver and Platinum carry no carat — they stay blank for you to set by hand.'}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* ── BACKUPS & ACTIVITY TAB ── */}
         {activeTab === 'backups' && (
           <div style={{ padding: '32px', maxWidth: 1000 }}>
@@ -1660,6 +1841,28 @@ export default function AdminPage() {
                     <input type="number" className="ds-input" value={form.priceMax || ''} onChange={e => setForm({ ...form, priceMax: e.target.value ? Number(e.target.value) : undefined })} placeholder="1000" min="0" />
                   </div>
                 </div>
+
+                {/* Apply the category's formula to the ticked carat materials */}
+                {activeRule && (
+                  <div style={{ border: '1px solid #c9a84c', background: '#fdfaf3', padding: '12px 14px' }}>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#7a6528', lineHeight: 1.7, marginBottom: 10 }}>
+                      {language === 'sq' ? 'Formula për këtë kategori: ' : 'Formula for this category: '}
+                      {Object.entries(activeRule.carats).map(([c, r]) => `${c} ${describeRule(r)}`).join(' · ')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyFormula}
+                      style={{ padding: '9px 18px', background: '#1a0a0a', color: '#fff', border: 'none', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}
+                    >
+                      {language === 'sq' ? 'Apliko formulën' : 'Apply formula'}
+                    </button>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#bbb', marginTop: 8, lineHeight: 1.6 }}>
+                      {language === 'sq'
+                        ? 'Plotëson Min/Max vetëm për materialet me karat që keni zgjedhur. Argjendi dhe platini mbeten bosh. Mund t\u2019i ndryshoni numrat më pas.'
+                        : 'Fills Min/Max only for the carat materials you have ticked. Silver and Platinum are left blank. You can still edit any number afterwards.'}
+                    </p>
+                  </div>
+                )}
 
                 {/* Category */}
                 <div>
