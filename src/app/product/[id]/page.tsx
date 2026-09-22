@@ -75,6 +75,15 @@ function EnquiryStoneChip({ productName, stone, language, style }: {
   );
 }
 
+/**
+ * A variant name is "<material> <carat>" — "Yellow Gold 14ct" — or just the
+ * material for metals sold without a karat ("Silver", "Platinum"). Both
+ * layouts split it the same way, so the rules live here rather than being
+ * re-derived per component.
+ */
+const variantMaterialOf = (name: string) => name.replace(/\s+(14|18)ct$/, '');
+const variantCaratOf = (name: string) => name.match(/(14ct|18ct)$/)?.[1] || '';
+
 // ── Engraving section ────────────────────────────────────────
 function EngravingSection({ language, onEngravingChange }: {
   language: string;
@@ -563,6 +572,29 @@ export default function ProductPage() {
   const isRing = isRingCategory(product.category);
   const hasVariants = product.materialVariants && product.materialVariants.length > 0;
   const currentVariant = hasVariants ? product.materialVariants.find(v => v.name === selectedVariant) : null;
+
+  // Material / carat split for the selector rows above.
+  const selMaterial = variantMaterialOf(selectedVariant);
+  const selCarat = variantCaratOf(selectedVariant);
+  const selMaterials = Array.from(new Set((product.materialVariants || []).map(v => variantMaterialOf(v.name))));
+  const caratsForMaterial = (mat: string) => Array.from(new Set(
+    (product.materialVariants || [])
+      .filter(v => variantMaterialOf(v.name) === mat)
+      .map(v => variantCaratOf(v.name))
+      .filter(Boolean),
+  ));
+  const selCarats = selMaterial ? caratsForMaterial(selMaterial) : [];
+
+  /** Switching metal keeps the customer's carat when the new metal offers it. */
+  const chooseMaterial = (mat: string) => {
+    const carats = caratsForMaterial(mat);
+    if (carats.length === 0) { setSelectedVariant(mat); return; }
+    setSelectedVariant(`${mat} ${carats.includes(selCarat) ? selCarat : carats[0]}`);
+  };
+  const chooseCarat = (ct: string) => {
+    if (!selMaterial) return;
+    setSelectedVariant(`${selMaterial} ${ct}`);
+  };
   const selectedSizeNum = selectedSize ? Number(selectedSize) : null;
   const ringSizePriceApplies = isRing && !!selectedSizeNum && !!currentVariant;
 
@@ -601,6 +633,7 @@ export default function ProductPage() {
 
   const t = {
     material: language === 'sq' ? 'Materiali' : 'Material',
+    carat: language === 'sq' ? 'Karatazhi' : 'Carat',
     size: language === 'sq' ? 'Madhësia' : 'Ring Size',
     stone: language === 'sq' ? 'Guri' : 'Stone',
     stoneSize: language === 'sq' ? 'Madhësia e Gurit' : 'Stone Size',
@@ -783,26 +816,43 @@ export default function ProductPage() {
             />
           ) : (
             <>
-              {/* Material row — only show selector when there's a real choice */}
-              {hasVariants && product.materialVariants.length > 1 && (
+              {/* Material and carat are picked SEPARATELY, the same way the
+                  couple layout does it. One combined row of "Yellow Gold 14ct"
+                  chips grows to six buttons with three metals, and asks the
+                  customer to read the metal and the karat out of one label. */}
+              {hasVariants && selMaterials.length > 1 && (
                 <div style={rowStyle}>
                   <span style={rowLabelStyle}>{t.material}</span>
                   <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {product.materialVariants.map(v => (
-                      <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ ...activeBtnStyle(selectedVariant === v.name), display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '8px 14px' }}>
-                        <span>{v.name}</span>
-                        <span style={{ fontSize: 10, opacity: 0.75, fontVariantNumeric: 'tabular-nums', minWidth: 78, textAlign: 'center' }}>{variantPriceLabel(v)}</span>
+                    {selMaterials.map(mat => (
+                      <button key={mat} onClick={() => chooseMaterial(mat)} style={activeBtnStyle(selMaterial === mat)}>
+                        {mat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Only metals sold by karat get this row — Silver and Platinum
+                  have no carat variants, so it disappears for them. */}
+              {hasVariants && selCarats.length > 0 && (
+                <div style={rowStyle}>
+                  <span style={rowLabelStyle}>{t.carat}</span>
+                  <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {selCarats.map(ct => (
+                      <button key={ct} onClick={() => chooseCarat(ct)} style={activeBtnStyle(selCarat === ct)}>
+                        {ct}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
               {/* Single-material: show as static label, not a button */}
-              {hasVariants && product.materialVariants.length === 1 && (
+              {hasVariants && selMaterials.length === 1 && (
                 <div style={rowStyle}>
                   <span style={rowLabelStyle}>{t.material}</span>
                   <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
-                    {product.materialVariants[0].name}
+                    {selMaterials[0]}
                   </div>
                 </div>
               )}
