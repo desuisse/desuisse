@@ -6,10 +6,12 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 import { ENGRAVING_SYMBOLS } from '@/data/products';
+import { useRevealSections } from '@/components/Reveal';
 
 const MAX_CHARS = 30;
 
 export default function FreeEngravingPage() {
+  useRevealSections();
   const { language } = useLanguage();
   const sq = language === 'sq';
 

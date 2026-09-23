@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useRevealSections } from '@/components/Reveal';
 
 /**
  * Returns & Exchanges policy page.
@@ -12,6 +13,7 @@ import { useLanguage } from '@/lib/LanguageContext';
  * practices before launch. Fields in [[BRACKETS]] are placeholders.
  */
 export default function ReturnsPage() {
+  useRevealSections();
   const { language } = useLanguage();
   const sq = language === 'sq';
 

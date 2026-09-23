@@ -4,11 +4,13 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useRevealSections } from '@/components/Reveal';
 
 /**
  * FAQ page. Each item is collapsible (accordion).
  */
 export default function FAQPage() {
+  useRevealSections();
   const { language } = useLanguage();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const sq = language === 'sq';

@@ -3,8 +3,10 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useRevealSections } from '@/components/Reveal';
 
 export default function SizingServicePage() {
+  useRevealSections();
   const { language } = useLanguage();
   return (
     <>

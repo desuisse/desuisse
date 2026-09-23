@@ -5,8 +5,10 @@ import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useRevealSections } from '@/components/Reveal';
 
 export default function RingStoryPage() {
+  useRevealSections();
   const { language } = useLanguage();
   const [activeStep, setActiveStep] = useState<string | null>(null);
 

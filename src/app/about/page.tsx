@@ -4,8 +4,10 @@ import Image from 'next/image';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useRevealSections } from '@/components/Reveal';
 
 export default function AboutPage() {
+  useRevealSections();
   const { t } = useLanguage();
 
   return (

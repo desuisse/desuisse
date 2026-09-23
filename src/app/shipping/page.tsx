@@ -3,8 +3,10 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
+import { useRevealSections } from '@/components/Reveal';
 
 export default function ShippingPage() {
+  useRevealSections();
   const { language } = useLanguage();
   const sq = language === 'sq';
 

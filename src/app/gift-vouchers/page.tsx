@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useCart } from '@/lib/CartContext';
 import { useWishlist } from '@/lib/WishlistContext';
+import { useRevealSections } from '@/components/Reveal';
 
 const vouchers = [
   { id: 'v1', amount: 100,  label: '€ 100' },
@@ -19,6 +20,7 @@ const vouchers = [
 ];
 
 export default function GiftVouchersPage() {
+  useRevealSections();
   const { language } = useLanguage();
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isWishlisted } = useWishlist();
