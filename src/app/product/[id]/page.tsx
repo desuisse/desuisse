@@ -10,7 +10,7 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, getWidthSurcharge, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, getWidthSurcharge, materialLabel, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
 import FeatureCards, { FeatureItem } from '@/components/FeatureCards';
 import { sanitizeEngraving } from '@/lib/security';
@@ -268,7 +268,7 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
                   const nextVariant = findVariant(option, nextCarat);
                   if (nextVariant) onPreviewVariantChange(nextVariant.name);
                 }} style={variantBtn(material === option)}>
-                  {option}
+                  {materialLabel(option, language)}
                 </button>
               ))}
             </div>
@@ -856,7 +856,7 @@ export default function ProductPage() {
                   <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {selMaterials.map(mat => (
                       <button key={mat} onClick={() => chooseMaterial(mat)} style={activeBtnStyle(selMaterial === mat)}>
-                        {mat}
+                        {materialLabel(mat, language)}
                       </button>
                     ))}
                   </div>
@@ -882,7 +882,7 @@ export default function ProductPage() {
                 <div style={rowStyle}>
                   <span style={rowLabelStyle}>{t.material}</span>
                   <div style={{ flex: 1, fontFamily: 'var(--font-sans)', fontSize: 13, color: '#444', padding: '8px 0' }}>
-                    {selMaterials[0]}
+                    {materialLabel(selMaterials[0], language)}
                   </div>
                 </div>
               )}

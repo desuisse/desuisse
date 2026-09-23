@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Product, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, RING_SIZE_MIN, RING_SIZE_MAX } from '@/data/products';
-import { CATEGORIES } from '@/data/products';
+import { CATEGORIES, materialLabel } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
@@ -118,7 +118,7 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {product.materialVariants.map(v => (
                   <button key={v.name} onClick={() => setSelectedVariant(v.name === selectedVariant ? '' : v.name)} style={{ padding: '7px 14px', border: `1px solid ${selectedVariant === v.name ? '#1a0a0a' : '#e8e0d4'}`, background: selectedVariant === v.name ? '#1a0a0a' : '#fff', color: selectedVariant === v.name ? '#fff' : '#444', fontFamily: 'var(--font-sans)', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                    <span>{v.name}</span>
+                    <span>{materialLabel(v.name, language)}</span>
                     <span style={{ fontSize: 10, opacity: 0.8 }}>{ringSizePriceApplies ? formatRingSizePrice(v, selectedSizeNum as number) : formatVariantPrice(v)}</span>
                   </button>
                 ))}

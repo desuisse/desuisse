@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import EmptyState from '@/components/EmptyState';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, MATERIAL_OPTIONS, CATEGORIES, getPriceRange } from '@/data/products';
+import { fetchProducts, Product, MATERIAL_OPTIONS, CATEGORIES, getPriceRange, materialLabel } from '@/data/products';
 
 type SortOption = 'default' | 'price-asc' | 'price-desc' | 'name-asc';
 
@@ -165,7 +165,7 @@ export default function ShopContent() {
           {MATERIAL_OPTIONS.map(m => (
             <label key={m} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 13, color: activeMaterials.includes(m) ? '#1a0a0a' : '#666', fontWeight: activeMaterials.includes(m) ? 600 : 400 }}>
               <input type="checkbox" checked={activeMaterials.includes(m)} onChange={() => toggleMaterial(m)} style={{ width: 16, height: 16, accentColor: '#c9a84c', cursor: 'pointer', flexShrink: 0 }} />
-              {m}
+              {materialLabel(m, language)}
             </label>
           ))}
         </div>

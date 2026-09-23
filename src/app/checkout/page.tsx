@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useCart } from '@/lib/CartContext';
 import { sanitizeText, sanitizeEmail, sanitizePhone, LIMITS } from '@/lib/security';
+import { materialLabel } from '@/data/products';
 
 type Step = 'info' | 'shipping' | 'payment' | 'confirm';
 
@@ -383,7 +384,7 @@ export default function CheckoutPage() {
                     </p>
                     {(it.selectedMaterial || it.selectedStone || it.selectedSize) && (
                       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', marginBottom: 3, letterSpacing: '0.04em' }}>
-                        {[it.selectedMaterial, it.selectedStone, it.selectedWidth, it.selectedSize].filter(Boolean).join(' · ')}
+                        {[materialLabel(it.selectedMaterial, language), it.selectedStone, it.selectedWidth, it.selectedSize].filter(Boolean).join(' · ')}
                       </p>
                     )}
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#666' }}>

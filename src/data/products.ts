@@ -87,6 +87,35 @@ export interface Product {
 
 export const MATERIAL_OPTIONS = ['Yellow Gold','White Gold','Rose Gold','Silver','Platinum'];
 export const CARATS = ['14ct', '18ct'];
+
+/**
+ * Albanian names for the metals.
+ *
+ * DISPLAY ONLY. The stored variant names stay English ('Yellow Gold 14ct')
+ * because they are the key everything else matches on — the cart line, the
+ * order record, the material photo, the admin. Translating the stored value
+ * would silently orphan every existing product and order.
+ */
+const MATERIAL_SQ: Record<string, string> = {
+  'Yellow Gold': 'Ari i Verdhë',
+  'White Gold': 'Ari i Bardhë',
+  'Rose Gold': 'Ari Rozë',
+  'Silver': 'Argjend',
+  'Platinum': 'Platin',
+};
+
+/**
+ * 'Yellow Gold 14ct' → 'Ari i Verdhë 14ct' in Albanian, unchanged in English.
+ * The carat is kept as-is: '14ct' reads the same in both languages.
+ */
+export function materialLabel(name: string, language: string): string {
+  if (language !== 'sq' || !name) return name;
+  const carat = name.match(/\s(14ct|18ct)$/)?.[1];
+  const metal = carat ? name.slice(0, -(carat.length + 1)) : name;
+  const translated = MATERIAL_SQ[metal];
+  if (!translated) return name;
+  return carat ? `${translated} ${carat}` : translated;
+}
 export const STONE_OPTIONS = ['Diamond', 'Lab Diamond', 'Moissanite', 'No Stone'];
 export const STONE_SIZE_OPTIONS = ['0.20ct','0.30ct','0.50ct','0.75ct','1.00ct','1.50ct','2.00ct','3.75mm','4.00mm','4.50mm','5.00mm'];
 export const RING_SIZES = Array.from({ length: 75 - 45 + 1 }, (_, i) => String(45 + i)); // '45'..'75'

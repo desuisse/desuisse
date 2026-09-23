@@ -6,6 +6,7 @@ import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
 import { useEffect } from 'react';
 import EmptyState from '@/components/EmptyState';
+import { materialLabel } from '@/data/products';
 
 export default function CartDrawer() {
   const { items, removeFromCart, updateQty, total, count, drawerOpen, setDrawerOpen } = useCart();
@@ -105,7 +106,7 @@ export default function CartDrawer() {
                   <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.05rem', fontWeight: 500, color: '#1a0a0a', marginBottom: 3 }}>{item.product.name}</p>
                   {(item.selectedMaterial || item.selectedStone || item.selectedWidth) && (
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#999', marginBottom: 2, letterSpacing: '0.04em' }}>
-                      {[item.selectedMaterial, item.selectedStone, item.selectedWidth].filter(Boolean).join(' · ')}
+                      {[materialLabel(item.selectedMaterial, language), item.selectedStone, item.selectedWidth].filter(Boolean).join(' · ')}
                     </p>
                   )}
                   {item.selectedSize && <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#999', marginBottom: 6, letterSpacing: '0.04em' }}>{language === 'sq' ? 'Madhësia' : 'Size'}: {item.selectedSize}</p>}
