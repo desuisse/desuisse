@@ -48,6 +48,7 @@ export type Category =
   | 'exclusive-models'
   | 'engagement-rings'
   | 'wedding-rings'
+  | 'eternity-rings'
   | 'earrings'
   | 'bracelets'
   | 'necklaces';
@@ -128,6 +129,7 @@ export const CATEGORIES: { key: Category; en: string; sq: string }[] = [
   { key: 'exclusive-models', en: 'Exclusive Models',  sq: 'Modele Ekskluzive' },
   { key: 'engagement-rings', en: 'Engagement Rings', sq: 'Unaza Fejese' },
   { key: 'wedding-rings',    en: 'Wedding Rings',    sq: 'Unaza Martese' },
+  { key: 'eternity-rings',   en: 'Eternity Rings',   sq: 'Unaza Eternity' },
   { key: 'earrings',         en: 'Earrings',         sq: 'Vathë' },
   { key: 'bracelets',        en: 'Bracelets',        sq: 'Byzylykë' },
   { key: 'necklaces',        en: 'Necklaces',        sq: 'Qafore' },
@@ -251,7 +253,7 @@ export function formatPrice(product: Product): string {
   return max > min ? `${euro(min)} – ${euro(max)}` : euro(min);
 }
 
-export const RING_CATEGORIES: Category[] = ['everyday-rings', 'exclusive-models', 'engagement-rings', 'wedding-rings'];
+export const RING_CATEGORIES: Category[] = ['everyday-rings', 'exclusive-models', 'engagement-rings', 'wedding-rings', 'eternity-rings'];
 export function isRingCategory(category: Category): boolean {
   return RING_CATEGORIES.includes(category);
 }

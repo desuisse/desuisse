@@ -107,6 +107,7 @@ export const NAV_ITEMS: NavItem[] = [
         links: [
           { href: '/shop?category=wedding-rings', en: 'All Wedding Rings', sq: 'Të Gjitha Unazat e Martesës' },
           { href: '/shop?category=wedding-rings', en: 'Couple Sets', sq: 'Setet e Çiftit' },
+          { href: '/shop?category=eternity-rings', en: 'Eternity Rings', sq: 'Unaza Eternity', isNew: true },
           { href: '/free-engraving', en: 'Free Engraving', sq: 'Gravim Falas' },
         ],
       },
