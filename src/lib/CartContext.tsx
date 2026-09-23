@@ -10,12 +10,14 @@ export interface CartItem {
   selectedSize: string;
   /** Stone choice, when the product offers one — it changes the price. */
   selectedStone?: string;
+  /** Band width, when the product offers a choice — also changes the price. */
+  selectedWidth?: string;
   unitPrice: number;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product, qty: number, material: string, size: string, unitPrice: number, stone?: string) => void;
+  addToCart: (product: Product, qty: number, material: string, size: string, unitPrice: number, stone?: string, width?: string) => void;
   removeFromCart: (index: number) => void;
   updateQty: (index: number, qty: number) => void;
   clearCart: () => void;
@@ -67,19 +69,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.setItem('ds-cart', JSON.stringify(next)); } catch { /* storage full */ }
   };
 
-  const addToCart = (product: Product, qty: number, selectedMaterial: string, selectedSize: string, unitPrice: number, selectedStone?: string) => {
+  const addToCart = (product: Product, qty: number, selectedMaterial: string, selectedSize: string, unitPrice: number, selectedStone?: string, selectedWidth?: string) => {
     // Clamp and validate before storing
     const safeQty   = Math.max(1, Math.min(99, Math.floor(qty)));
     const safePrice = Math.max(0, Math.min(999999, unitPrice));
     const safeMat   = String(selectedMaterial).slice(0, 100);
     const safeSize  = String(selectedSize).slice(0, 20);
     const safeStone = selectedStone ? String(selectedStone).slice(0, 40) : undefined;
+    const safeWidth = selectedWidth ? String(selectedWidth).slice(0, 10) : undefined;
 
     const existing = items.findIndex(i =>
       i.product.id === product.id &&
       i.selectedMaterial === safeMat &&
       i.selectedSize === safeSize &&
-      (i.selectedStone || '') === (safeStone || '')
+      (i.selectedStone || '') === (safeStone || '') &&
+      (i.selectedWidth || '') === (safeWidth || '')
     );
 
     if (existing >= 0) {
@@ -87,7 +91,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       next[existing].qty = Math.min(99, next[existing].qty + safeQty);
       save(next);
     } else {
-      save([...items, { product, qty: safeQty, selectedMaterial: safeMat, selectedSize: safeSize, selectedStone: safeStone, unitPrice: safePrice }]);
+      save([...items, { product, qty: safeQty, selectedMaterial: safeMat, selectedSize: safeSize, selectedStone: safeStone, selectedWidth: safeWidth, unitPrice: safePrice }]);
     }
     setDrawerOpen(true);
   };

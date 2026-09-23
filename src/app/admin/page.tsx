@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import { PricingRules, DEFAULT_PRICING_RULES, applyCaratRule, ruleForCategory, describeRule } from '@/data/pricingRules';
-import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, MaterialVariant, formatVariantPrice, formatPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
+import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, WIDTH_OPTIONS, WidthVariant, MaterialVariant, formatVariantPrice, formatPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
 import { Order, OrderStatus, ORDER_STATUSES, summarise } from '@/lib/orders';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 import { sanitizeText, sanitizeUrl, sanitizeNumber, isValidProduct, LIMITS } from '@/lib/security';
@@ -27,6 +27,7 @@ const EMPTY_PRODUCT: Omit<Product, 'id'> = {
   materials: [],
   materialVariants: [],
   colorVariants: [],
+  widthVariants: [],
   sizes: [],
   sku: '',
   stones: [],
@@ -442,6 +443,7 @@ export default function AdminPage() {
       materials: p.materials || [],
       materialVariants: p.materialVariants || [],
       colorVariants: p.colorVariants || [],
+      widthVariants: p.widthVariants || [],
       sizes: p.sizes || [],
       sku: p.sku || '',
       stones: p.stones || [],
@@ -498,6 +500,16 @@ export default function AdminPage() {
         ? { priceMax: sanitizeNumber(v.priceMax, 0, 999999) }
         : {}),
     })).filter(v => v.name);
+    // Only widths that are actually ticked survive, each with a sane surcharge.
+    const cleanWidthVariants: WidthVariant[] = (form.widthVariants || [])
+      .filter(w => WIDTH_OPTIONS.includes(w.mm))
+      .map(w => ({
+        mm: w.mm,
+        ...(w.image ? { image: sanitizeUrl(w.image) } : {}),
+        ...(w.surcharge && w.surcharge > 0 ? { surcharge: sanitizeNumber(w.surcharge, 0, 999999) } : {}),
+      }))
+      .sort((a, b) => parseFloat(a.mm) - parseFloat(b.mm));
+
     const cleanColorVariants = (form.colorVariants || []).map(color => ({
       name: sanitizeText(color.name, 50),
       images: (color.images || []).map(sanitizeUrl).filter(Boolean),
@@ -537,6 +549,7 @@ export default function AdminPage() {
         materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
         materialVariants: cleanVariants,
         colorVariants: cleanColorVariants,
+        widthVariants: cleanWidthVariants,
         sizes: cleanSizes,
         sku: cleanSku || undefined,
         stones: cleanStones,
@@ -563,6 +576,7 @@ export default function AdminPage() {
               materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
               materialVariants: cleanVariants,
               colorVariants: cleanColorVariants,
+              widthVariants: cleanWidthVariants,
               sizes: cleanSizes,
               sku: cleanSku || undefined,
               stones: cleanStones,
@@ -1090,8 +1104,8 @@ export default function AdminPage() {
                             <span style={{ flex: 1 }}>
                               {item.name}
                               <span style={{ color: '#aaa' }}>
-                                {[item.material, item.stone, item.size].filter(Boolean).length > 0
-                                  ? ` · ${[item.material, item.stone, item.size].filter(Boolean).join(' · ')}`
+                                {[item.material, item.stone, item.width, item.size].filter(Boolean).length > 0
+                                  ? ` · ${[item.material, item.stone, item.width, item.size].filter(Boolean).join(' · ')}`
                                   : ''}
                               </span>
                             </span>
@@ -1863,6 +1877,77 @@ export default function AdminPage() {
                     </p>
                   </div>
                 )}
+
+                {/* Band widths — optional, and off by default. Most models
+                    are made in one width; only tick widths this ring really
+                    comes in, because every tick is a photo someone has to
+                    shoot and a price someone has to honour. */}
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>
+                    {language === 'sq' ? 'Gjerësia e Unazës (opsionale)' : 'Band Width (optional)'}
+                  </label>
+                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#bbb', marginBottom: 10, lineHeight: 1.6 }}>
+                    {language === 'sq'
+                      ? 'Lëreni bosh nëse ky model bëhet vetëm në një gjerësi. Çdo gjerësi mund të ketë foton e vet dhe një shtesë çmimi.'
+                      : 'Leave empty if this model comes in one width only. Each width can carry its own photo and a price surcharge.'}
+                  </p>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                    {WIDTH_OPTIONS.map(mm => {
+                      const on = (form.widthVariants || []).some(w => w.mm === mm);
+                      return (
+                        <button key={mm} type="button" onClick={() => {
+                          const current = form.widthVariants || [];
+                          setForm({
+                            ...form,
+                            widthVariants: on
+                              ? current.filter(w => w.mm !== mm)
+                              : [...current, { mm }].sort((a, b) => parseFloat(a.mm) - parseFloat(b.mm)),
+                          });
+                        }} style={{ padding: '6px 12px', border: `1px solid ${on ? '#1a0a0a' : '#e8e0d4'}`, background: on ? '#1a0a0a' : '#fff', color: on ? '#fff' : '#666', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
+                          {mm}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {(form.widthVariants || []).length > 0 && (
+                    <div style={{ border: '1px solid #e8e0d4', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '54px 1fr 110px', gap: 10 }}>
+                        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                          {language === 'sq' ? 'Gjer.' : 'Width'}
+                        </span>
+                        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                          {language === 'sq' ? 'URL e fotos' : 'Photo URL'}
+                        </span>
+                        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                          {language === 'sq' ? 'Shtesë €' : 'Surcharge €'}
+                        </span>
+                      </div>
+                      {(form.widthVariants || []).map(w => {
+                        const patch = (next: Partial<WidthVariant>) => setForm({
+                          ...form,
+                          widthVariants: (form.widthVariants || []).map(item => item.mm === w.mm ? { ...item, ...next } : item),
+                        });
+                        return (
+                          <div key={w.mm} style={{ display: 'grid', gridTemplateColumns: '54px 1fr 110px', gap: 10, alignItems: 'center' }}>
+                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#1a0a0a' }}>{w.mm}</span>
+                            <input
+                              type="text" className="ds-input" placeholder="https://…"
+                              value={w.image || ''}
+                              onChange={e => patch({ image: e.target.value })}
+                            />
+                            <input
+                              type="number" className="ds-input" min="0" step="10" placeholder="0"
+                              value={w.surcharge ?? ''}
+                              onChange={e => patch({ surcharge: e.target.value ? Number(e.target.value) : undefined })}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
                 {/* Category */}
                 <div>

@@ -10,7 +10,7 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, getWidthSurcharge, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
 import FeatureCards, { FeatureItem } from '@/components/FeatureCards';
 import { sanitizeEngraving } from '@/lib/security';
@@ -512,6 +512,7 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedStone, setSelectedStone] = useState('');
   const [selectedStoneSize, setSelectedStoneSize] = useState('');
+  const [selectedWidth, setSelectedWidth] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [activeImg, setActiveImg] = useState(0);
   const [engraving, setEngraving] = useState({ enabled: false, text: '', symbol: '' });
@@ -547,6 +548,7 @@ export default function ProductPage() {
     if (product.stones?.length === 1 && !isEnquiryStone(product.stones[0])) setSelectedStone(product.stones[0]);
     if (product.stoneSizes?.length === 1)       setSelectedStoneSize(product.stoneSizes[0]);
     if (product.colorVariants?.length)          setSelectedColor(product.colorVariants[0].name);
+    if (product.widthVariants?.length)          setSelectedWidth(product.widthVariants[0].mm);
     if (isRingCategory(product.category)) {
       // Rings use a 45–75 slider, not a pick list — default to a common
       // middle size (52) so a price is visible right away.
@@ -557,7 +559,7 @@ export default function ProductPage() {
   }, [product]);
 
   // Keep the selected material or colour photo in view when the customer changes it.
-  useEffect(() => { setActiveImg(0); }, [selectedVariant, selectedColor]);
+  useEffect(() => { setActiveImg(0); }, [selectedVariant, selectedColor, selectedWidth]);
 
   if (!product) return (
     <>
@@ -602,33 +604,42 @@ export default function ProductPage() {
   // the same setting, so the stone is a surcharge on top of whatever the metal,
   // carat and ring size already cost.
   const stoneExtra = getStoneSurcharge(product, selectedStone);
+  const widthExtra = getWidthSurcharge(product, selectedWidth);
+  // Everything the customer added on top of the metal price. Kept as one
+  // number so the label, the Add-to-cart price and the order can never
+  // disagree about what a chosen option costs.
+  const singleExtras = stoneExtra + widthExtra;
   const fmtEuro = (n: number) => `${n.toLocaleString('de-DE')}.00€`;
 
   /** Price label for one material variant, stone included. */
   const variantPriceLabel = (v: MaterialVariant) => {
-    if (ringSizePriceApplies) return fmtEuro(priceForRingSize(v, selectedSizeNum as number) + stoneExtra);
-    if (!stoneExtra) return formatVariantPrice(v);
+    if (ringSizePriceApplies) return fmtEuro(priceForRingSize(v, selectedSizeNum as number) + singleExtras);
+    if (!singleExtras) return formatVariantPrice(v);
     return v.priceMax && v.priceMax > v.price
-      ? `${fmtEuro(v.price + stoneExtra)} – ${fmtEuro(v.priceMax + stoneExtra)}`
-      : fmtEuro(v.price + stoneExtra);
+      ? `${fmtEuro(v.price + singleExtras)} – ${fmtEuro(v.priceMax + singleExtras)}`
+      : fmtEuro(v.price + singleExtras);
   };
 
   const displayPrice = product.hasCoupleOption
-    ? (couplePrice > 0 ? fmtEuro(couplePrice) : formatPrice(product))
+    ? (couplePrice > 0 ? fmtEuro(couplePrice + widthExtra) : formatPrice(product))
     : currentVariant
       ? variantPriceLabel(currentVariant)
-      : (stoneExtra && product.price > 0 ? fmtEuro(product.price + stoneExtra) : formatPrice(product));
+      : (singleExtras && product.price > 0 ? fmtEuro(product.price + singleExtras) : formatPrice(product));
   // A ring size resolves the material's Min–Max range to one exact number,
   // so the "confirmed after weighing" hedge only makes sense when there's
   // no slider driving it to a concrete figure (e.g. bracelets, necklaces).
   const isPriceRange = !product.hasCoupleOption && !ringSizePriceApplies && !!currentVariant?.priceMax && currentVariant.priceMax > currentVariant.price;
 
   const selectedColorVariant = product.colorVariants?.find(color => color.name === selectedColor);
-  // A colour gallery takes precedence, followed by a material photo and then
-  // the standard product images. This lets one product hold a full collection.
-  const images = selectedColorVariant?.images?.length
-    ? selectedColorVariant.images
-    : [currentVariant?.image || product.image, product.image2].filter(Boolean) as string[];
+  const selectedWidthVariant = product.widthVariants?.find(w => w.mm === selectedWidth);
+  // Width photo first — it is the narrowest choice the customer made, and a
+  // 2mm band genuinely does not look like an 8mm one. Then a colour gallery,
+  // then the material photo, then the product's own images.
+  const images = selectedWidthVariant?.image
+    ? [selectedWidthVariant.image]
+    : selectedColorVariant?.images?.length
+      ? selectedColorVariant.images
+      : [currentVariant?.image || product.image, product.image2].filter(Boolean) as string[];
   const catLabel = CATEGORIES.find(c => c.key === product.category);
 
   const t = {
@@ -801,6 +812,25 @@ export default function ProductPage() {
             </div>
           )}
 
+          {product.widthVariants && product.widthVariants.length > 0 && (
+            <div style={rowStyle}>
+              <span style={rowLabelStyle}>{language === 'sq' ? 'Gjerësia' : 'Width'}</span>
+              <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {product.widthVariants.map(w => {
+                  const extra = getWidthSurcharge(product, w.mm);
+                  return (
+                    <button key={w.mm} onClick={() => setSelectedWidth(w.mm)} style={activeBtnStyle(selectedWidth === w.mm)}>
+                      {w.mm}
+                      {extra > 0 && (
+                        <span style={{ marginLeft: 6, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{formatStoneSurcharge(extra)}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* If couple option → show CoupleSection instead of standard selectors */}
           {product.hasCoupleOption ? (
             <CoupleSection
@@ -951,7 +981,10 @@ export default function ProductPage() {
               // Same surcharge the customer just read on screen. Couple pieces
               // already carry it inside their own total.
               if (!product.hasCoupleOption) unitPrice += stoneExtra;
-              addToCart(product, 1, selectedVariant, selectedSize, unitPrice, selectedStone || undefined);
+              // Width is charged once per order line, the same way the stone
+              // is — a couple set of 6mm bands carries it once, not twice.
+              unitPrice += widthExtra;
+              addToCart(product, 1, selectedVariant, selectedSize, unitPrice, selectedStone || undefined, selectedWidth || undefined);
             }} style={{ padding: '15px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#c9a84c'}
               onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#1a0a0a'}

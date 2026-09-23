@@ -23,6 +23,26 @@ export interface ColorVariant {
   images: string[];
 }
 
+/**
+ * Band width in millimetres.
+ *
+ * Only the widths a ring is actually made in get ticked in the admin, so a
+ * model offered in three widths shows three buttons and one offered in none
+ * shows no width row at all. Each width carries its own photo, because a
+ * 2mm band and an 8mm band are visibly different objects, and its own
+ * surcharge, because the wide one uses far more metal.
+ */
+export interface WidthVariant {
+  /** '4mm' — one of WIDTH_OPTIONS. */
+  mm: string;
+  /** Photo for this width; falls back to the product's main image. */
+  image?: string;
+  /** Euros ADDED to the material price. 0 or absent = no surcharge. */
+  surcharge?: number;
+}
+
+export const WIDTH_OPTIONS = Array.from({ length: 10 }, (_, i) => `${i + 1}mm`);
+
 export type Category =
   | 'everyday-rings'
   | 'exclusive-models'
@@ -46,6 +66,8 @@ export interface Product {
   materials: string[];
   materialVariants: MaterialVariant[];
   colorVariants?: ColorVariant[];
+  /** Band widths this model is made in. Absent/empty = no width choice. */
+  widthVariants?: WidthVariant[];
   sizes: string[];
   sku?: string;
   stones?: string[];
@@ -266,6 +288,17 @@ export function enquiryHref(productName: string, stone: string): string {
   return `/contact?about=${encodeURIComponent(`${productName} — ${stone}`)}`;
 }
 
+export function getWidthSurcharge(
+  product: Pick<Product, 'widthVariants'> | null | undefined,
+  mm: string | undefined | null,
+): number {
+  if (!product || !mm || !product.widthVariants) return 0;
+  const found = product.widthVariants.find(w => w.mm === mm);
+  const value = found?.surcharge;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 0;
+  return Math.round(value);
+}
+
 /** '+1.800€' for a positive surcharge, empty string for none. */
 export function formatStoneSurcharge(amount: number): string {
   return amount > 0 ? `+${amount.toLocaleString('de-DE')}€` : '';
@@ -278,7 +311,7 @@ export function formatStoneSurcharge(amount: number): string {
  */
 export function resolveUnitPrice(
   product: Product,
-  opts: { variantName?: string; size?: string | number; stone?: string },
+  opts: { variantName?: string; size?: string | number; stone?: string; width?: string },
 ): number {
   const variant =
     (product.materialVariants || []).find(v => v.name === opts.variantName) ||
@@ -296,5 +329,8 @@ export function resolveUnitPrice(
     base = product.price || 0;
   }
 
-  return base + getStoneSurcharge(product, opts.stone);
+  // Width is a surcharge like the stone. It MUST be here: this is what the
+  // order API recomputes with, so leaving it out would both undercharge the
+  // order and flag every width purchase as a price mismatch.
+  return base + getStoneSurcharge(product, opts.stone) + getWidthSurcharge(product, opts.width);
 }
