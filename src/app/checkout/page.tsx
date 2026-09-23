@@ -334,6 +334,7 @@ export default function CheckoutPage() {
                           material: it.selectedMaterial,
                           size: it.selectedSize,
                           stone: it.selectedStone,
+                          width: it.selectedWidth,
                           unitPrice: it.unitPrice,
                         })),
                         // For real payments, send a Stripe Payment Intent ID here instead
@@ -382,7 +383,7 @@ export default function CheckoutPage() {
                     </p>
                     {(it.selectedMaterial || it.selectedStone || it.selectedSize) && (
                       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', marginBottom: 3, letterSpacing: '0.04em' }}>
-                        {[it.selectedMaterial, it.selectedStone, it.selectedSize].filter(Boolean).join(' · ')}
+                        {[it.selectedMaterial, it.selectedStone, it.selectedWidth, it.selectedSize].filter(Boolean).join(' · ')}
                       </p>
                     )}
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#666' }}>

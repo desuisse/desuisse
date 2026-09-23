@@ -34,6 +34,8 @@ export interface OrderItem {
   material?: string;
   size?: string;
   stone?: string;
+  /** Band width, when the ring offers a choice. */
+  width?: string;
   qty: number;
   unitPrice: number;
   lineTotal: number;

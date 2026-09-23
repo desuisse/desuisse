@@ -20,6 +20,7 @@ interface SubmittedItem {
   material?: string;
   size?: string;
   stone?: string;
+  width?: string;
   unitPrice?: number;
 }
 
@@ -37,6 +38,7 @@ function parseItems(raw: unknown): SubmittedItem[] {
       material: sanitize(e.material, 60),
       size: sanitize(e.size, 20),
       stone: sanitize(e.stone, 40),
+      width: sanitize(e.width, 10),
       unitPrice: Number.isFinite(Number(e.unitPrice)) ? Number(e.unitPrice) : undefined,
     }];
   });
@@ -68,6 +70,7 @@ async function buildItems(submitted: SubmittedItem[]): Promise<{ items: OrderIte
         variantName: line.material,
         size: line.size,
         stone: line.stone,
+        width: line.width,
       });
       if (line.unitPrice !== undefined && Math.abs(line.unitPrice - unitPrice) > 0.5) adjusted = true;
     } else {
@@ -82,6 +85,7 @@ async function buildItems(submitted: SubmittedItem[]): Promise<{ items: OrderIte
       material: line.material || undefined,
       size: line.size || undefined,
       stone: line.stone || undefined,
+      width: line.width || undefined,
       qty: line.qty,
       unitPrice: Math.round(unitPrice * 100) / 100,
       lineTotal: Math.round(unitPrice * line.qty * 100) / 100,
@@ -207,6 +211,7 @@ export async function POST(req: NextRequest) {
       .map(i => `<tr><td style="padding:6px 12px 6px 0">${i.qty}&times; ${i.name}` +
                 `${i.material ? ` &middot; ${i.material}` : ''}` +
                 `${i.stone ? ` &middot; ${i.stone}` : ''}` +
+                `${i.width ? ` &middot; ${i.width}` : ''}` +
                 `${i.size ? ` &middot; ${i.size}` : ''}` +
                 `</td><td style="padding:6px 0;text-align:right">${i.lineTotal.toLocaleString('de-DE')}&euro;</td></tr>`)
       .join('');

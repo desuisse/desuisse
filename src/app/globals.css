@@ -1056,7 +1056,22 @@ button, a {
 @media (max-width: 640px) {
   .header-inner { padding: 0 12px; }
   .header-main { height: 66px; gap: 6px; }
-  .header-logo-img { height: 42px; }
+
+  /* The centre column was `auto` — the wordmark's natural width — with 1fr
+     side columns. On a narrow screen the logo kept its full width, the right
+     cell was squeezed below its content, and because it is justified to the
+     end its icons overflowed LEFTWARDS, sliding under the logo. That is the
+     "logo interfering with the search" symptom.
+     Giving the side columns `auto` reserves exactly what the controls need
+     and hands the leftover to the logo, which then shrinks instead of
+     overlapping. */
+  .header-main { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .header-logo-link { min-width: 0; }
+  .header-logo-img { height: 42px; max-width: 100%; object-fit: contain; }
+
+  /* The drawer already carries ALB | EN, so the header copy is a duplicate
+     that costs ~44px exactly where the room runs out. */
+  .lang-switcher { display: none; }
   .site-header.is-scrolled .header-logo-img { height: 36px; }
   .header-cell-right { gap: 0; }
   .header-icon-btn { padding: 6px; }
@@ -1066,7 +1081,7 @@ button, a {
 }
 @media (max-width: 380px) {
   .header-inner { padding: 0 8px; }
-  .header-logo-img { height: 36px; }
+  .header-logo-img { height: 36px; max-width: 100%; }
   .header-icon-btn { padding: 5px; }
   .header-icon-btn svg { width: 16px; height: 16px; }
 }
