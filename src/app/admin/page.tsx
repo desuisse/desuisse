@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
-import { PricingRules, DEFAULT_PRICING_RULES, applyCaratRule, ruleForCategory, describeRule } from '@/data/pricingRules';
+import { PricingRules, DEFAULT_PRICING_RULES, applyCaratRule, applyWidthRule, ruleForCategory, describeRule, describeWidthRule } from '@/data/pricingRules';
 import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, WIDTH_OPTIONS, WidthVariant, MaterialVariant, formatVariantPrice, formatPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
 import { Order, OrderStatus, ORDER_STATUSES, summarise } from '@/lib/orders';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
@@ -793,13 +793,27 @@ export default function AdminPage() {
       return { ...v, price: min, priceMax: max > min ? max : undefined };
     });
 
+    // Width surcharges come from the same button, for the widths already
+    // ticked. Ten numbers per product across a 96-product catalogue is how a
+    // ring ends up sold below the cost of its own gold.
+    let widthVariants = form.widthVariants;
+    const widthRule = activeRule.width;
+    if (widthRule?.enabled && (form.widthVariants || []).length > 0) {
+      widthVariants = (form.widthVariants || []).map(w => {
+        const mm = parseFloat(w.mm);
+        const surcharge = applyWidthRule(mm, widthRule);
+        return { ...w, ...(surcharge > 0 ? { surcharge } : { surcharge: undefined }) };
+      });
+      touched += widthVariants.length;
+    }
+
     if (touched === 0) {
       alert(language === 'sq'
         ? 'Asnjë material me karat nuk është zgjedhur — zgjidhni p.sh. Yellow Gold 14ct më poshtë.'
         : 'No carat materials are selected — tick e.g. Yellow Gold 14ct below first.');
       return;
     }
-    setForm({ ...form, materialVariants: updated });
+    setForm({ ...form, materialVariants: updated, widthVariants });
   };
 
   const visibleOrders = statusFilter === 'all' ? orders : orders.filter(o => o.status === statusFilter);
@@ -1426,6 +1440,71 @@ export default function AdminPage() {
                         );
                       })}
 
+                      {/* ── Band width ramp ── */}
+                      {(() => {
+                        const wr = rule.width ?? { enabled: false, fromMm: 1, toMm: 10, spread: 400 };
+                        const writeWidth = (patch: Partial<typeof wr>) => write({ ...rule, width: { ...wr, ...patch } });
+                        return (
+                          <div style={{ borderTop: '1px solid #e8e0d4', marginTop: 20, paddingTop: 18 }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 14 }}>
+                              <input
+                                type="checkbox"
+                                checked={wr.enabled}
+                                onChange={e => writeWidth({ enabled: e.target.checked })}
+                                style={{ width: 16, height: 16, accentColor: '#c9a84c', cursor: 'pointer' }}
+                              />
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 600, color: '#1a0a0a' }}>
+                                {language === 'sq' ? 'Shtesë sipas gjerësisë së unazës' : 'Surcharge by band width'}
+                              </span>
+                            </label>
+
+                            {wr.enabled && (
+                              <>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 6 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                                    {language === 'sq' ? 'Nga (mm)' : 'From (mm)'}
+                                  </span>
+                                  <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                                    {language === 'sq' ? 'Deri (mm)' : 'To (mm)'}
+                                  </span>
+                                  <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
+                                    {language === 'sq' ? 'Rritje totale €' : 'Total rise €'}
+                                  </span>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 14 }}>
+                                  <input type="number" className="ds-input" min="0.5" step="0.5" value={wr.fromMm}
+                                    onChange={e => writeWidth({ fromMm: Number(e.target.value) || 1 })} />
+                                  <input type="number" className="ds-input" min="1" step="0.5" value={wr.toMm}
+                                    onChange={e => writeWidth({ toMm: Number(e.target.value) || 10 })} />
+                                  <input type="number" className="ds-input" min="0" step="10" value={wr.spread}
+                                    onChange={e => writeWidth({ spread: Number(e.target.value) || 0 })} />
+                                </div>
+
+                                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#888', lineHeight: 1.7, marginBottom: 12 }}>
+                                  {language === 'sq'
+                                    ? `${wr.fromMm}mm nuk ka shtesë, ${wr.toMm}mm ka +${wr.spread}€, dhe të ndërmjetmet ndahen në mënyrë lineare. "Apliko formulën" i mbush për gjerësitë që keni zgjedhur te produkti.`
+                                    : `${wr.fromMm}mm carries no surcharge, ${wr.toMm}mm carries +${wr.spread}€, and everything between is spread evenly. "Apply formula" fills these for whichever widths the product has ticked.`}
+                                </p>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 6 }}>
+                                  {WIDTH_OPTIONS.map(mm => {
+                                    const value = applyWidthRule(parseFloat(mm), wr);
+                                    return (
+                                      <div key={mm} style={{ border: '1px solid #e8e0d4', background: '#faf8f5', padding: '7px 9px', textAlign: 'center' }}>
+                                        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#888' }}>{mm}</p>
+                                        <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#1a0a0a', fontVariantNumeric: 'tabular-nums' }}>
+                                          +{value.toLocaleString('de-DE')}€
+                                        </p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })()}
+
                       {/* A worked example beats a paragraph of explanation. */}
                       <div style={{ borderTop: '1px solid #e8e0d4', marginTop: 18, paddingTop: 16 }}>
                         <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>
@@ -1862,6 +1941,7 @@ export default function AdminPage() {
                     <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#7a6528', lineHeight: 1.7, marginBottom: 10 }}>
                       {language === 'sq' ? 'Formula për këtë kategori: ' : 'Formula for this category: '}
                       {Object.entries(activeRule.carats).map(([c, r]) => `${c} ${describeRule(r)}`).join(' · ')}
+                      {activeRule.width?.enabled && ` · ${language === 'sq' ? 'Gjerësia' : 'Width'} ${describeWidthRule(activeRule.width)}`}
                     </p>
                     <button
                       type="button"

@@ -7,7 +7,7 @@
  * presses the button, and the resulting numbers are stored on the product.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { DEFAULT_PRICING_RULES, PricingRules, CategoryPricingRule } from '@/data/pricingRules';
+import { DEFAULT_PRICING_RULES, PricingRules, CategoryPricingRule, WidthRule } from '@/data/pricingRules';
 import { kvGetJson, kvSetJson, isUpstashConfigured } from '@/lib/upstash';
 import { authenticateRequest } from '@/lib/session';
 
@@ -40,7 +40,21 @@ function sanitiseRules(input: unknown): PricingRules {
       }
     }
 
-    out[category as keyof PricingRules] = { enabled: Boolean(r.enabled), carats };
+    let width: WidthRule | undefined;
+    if (r.width && typeof r.width === 'object') {
+      const w = r.width as Record<string, unknown>;
+      const fromMm = clampNumber(w.fromMm, 0.5, 50, 1);
+      // toMm must stay ABOVE fromMm or the ramp divides by zero (or inverts).
+      const toMm = clampNumber(w.toMm, fromMm + 0.5, 50, Math.max(fromMm + 0.5, 10));
+      width = {
+        enabled: Boolean(w.enabled),
+        fromMm,
+        toMm,
+        spread: clampNumber(w.spread, 0, 100000, 0),
+      };
+    }
+
+    out[category as keyof PricingRules] = { enabled: Boolean(r.enabled), carats, ...(width ? { width } : {}) };
   }
   return out;
 }
