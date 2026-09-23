@@ -404,17 +404,21 @@ function InfoTiles({ language }: { language: string }) {
       en: 'Delivery within 4 weeks', sq: 'Dorëzim brenda 4 javësh',
     },
     {
-      href: '/warranty',
-      icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-      en: 'Free size adjustment', sq: 'Rregullim falas i madhësisë',
+      href: '/free-engraving',
+      icon: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>,
+      en: 'Free engraving', sq: 'Gravim falas',
     },
   ];
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 40, paddingTop: 32, borderTop: '1px solid #e8e0d4' }} className="info-tiles-grid">
       {tiles.map((tile, i) => (
-        <Link key={i} href={tile.href} style={{ textDecoration: 'none' }}>
-          <div style={{ textAlign: 'center', padding: '20px 12px', border: '1px solid #e8e0d4', cursor: 'pointer', transition: 'border-color 0.2s, background 0.2s' }}
+        // The Link is the grid item. Without height:100% it shrank to its own
+        // text, so a one-line tile sat shorter than a two-line neighbour —
+        // four boxes of three different heights. Stretching the link and
+        // centring the contents makes them one row whatever the labels say.
+        <Link key={i} href={tile.href} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px 12px', border: '1px solid #e8e0d4', cursor: 'pointer', transition: 'border-color 0.2s, background 0.2s' }}
             onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#c9a84c'; (e.currentTarget as HTMLDivElement).style.background = '#fdf9f0'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = '#e8e0d4'; (e.currentTarget as HTMLDivElement).style.background = '#fff'; }}
           >
