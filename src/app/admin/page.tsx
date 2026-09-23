@@ -82,6 +82,9 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCat, setFilterCat] = useState('all');
   const [saved, setSaved] = useState(false);
+  // The dark nav panel is a lot of permanent furniture on a laptop. It
+  // collapses to nothing and the content takes the width back.
+  const [navOpen, setNavOpen] = useState(true);
   const [pricingRules, setPricingRules] = useState<PricingRules>(DEFAULT_PRICING_RULES);
   const [rulesSaved, setRulesSaved] = useState(false);
   const [ruleCategory, setRuleCategory] = useState<Product['category']>('wedding-rings');
@@ -894,7 +897,8 @@ export default function AdminPage() {
   return (
     <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font-sans)' }}>
 
-      {/* Sidebar */}
+      {/* Sidebar — collapsible, so the product list can use the full width */}
+      {navOpen && (
       <aside className="admin-sidebar" style={{ padding: '32px 0' }}>
         <div style={{ padding: '0 24px 32px', borderBottom: '1px solid #2a1a1a' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -970,11 +974,27 @@ export default function AdminPage() {
           </button>
         </div>
       </aside>
+      )}
 
       {/* Main content */}
       <main style={{ flex: 1, background: '#fafaf8', overflowY: 'auto' }}>
         {/* Tab bar */}
-        <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 12, minHeight: 68 }}>
+        <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, minHeight: 68 }}>
+          <button
+            onClick={() => setNavOpen(o => !o)}
+            aria-label={navOpen ? 'Hide menu' : 'Show menu'}
+            title={navOpen ? 'Hide menu' : 'Show menu'}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'transparent', border: '1px solid #e8e0d4', color: '#444', cursor: 'pointer' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+            {!navOpen && (
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                {language === 'sq' ? 'Menyja' : 'Menu'}
+              </span>
+            )}
+          </button>
           {activeTab === 'products' && (
             <div style={{ display: 'flex', gap: 12, padding: '8px 0' }}>
               {saved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#27ae60', display: 'flex', alignItems: 'center', gap: 6 }}>✓ Saved!</span>}
@@ -1724,8 +1744,11 @@ export default function AdminPage() {
         )}
 
         {/* ── PRODUCTS TAB ── */}
+        {/* The form column was 420px — enough for a label and a cramped input,
+            which is why every field felt tight. It now takes roughly half the
+            width, so fields have room to breathe. */}
         {activeTab === 'products' && (
-        <div className="admin-products-grid" style={{ padding: '32px', display: 'grid', gridTemplateColumns: editing || isAdding ? '1fr 420px' : '1fr', gap: 32, alignItems: 'start' }}>
+        <div className="admin-products-grid" style={{ padding: '32px', display: 'grid', gridTemplateColumns: editing || isAdding ? 'minmax(0, 1fr) minmax(480px, 620px)' : '1fr', gap: 32, alignItems: 'start' }}>
 
           {/* Product list */}
           <div>
