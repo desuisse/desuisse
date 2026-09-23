@@ -164,9 +164,10 @@ function EngravingSection({ language, onEngravingChange }: {
 }
 
 // ── Couple ring section — checkbox toggles each gender ────────────
-function CoupleSection({ product, language, stoneExtra, selectedStone, setSelectedStone, selectedStoneSize, setSelectedStoneSize, onPreviewVariantChange, onPriceChange }: {
+function CoupleSection({ product, language, stoneExtra, selectedStone, setSelectedStone, selectedStoneSize, setSelectedStoneSize, onPreviewVariantChange, onPriceChange, onWidthChange }: {
   product: Product;
   stoneExtra: number;
+  onWidthChange: (label: string) => void;
   language: string;
   selectedStone: string;
   setSelectedStone: (stone: string) => void;
@@ -183,6 +184,16 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
   const [menMaterial, setMenMaterial] = useState('');
   const [menCarat, setMenCarat] = useState('');
   const [menSize, setMenSize] = useState(String(Math.round((RING_SIZE_MIN + RING_SIZE_MAX) / 2)));
+  // Width is chosen PER BAND. A couple buying one 6mm ring and one 4mm ring is
+  // normal, and a customer taking only the men's band must pay only that
+  // band's surcharge — a pair-level width would charge them for two.
+  const [womenWidth, setWomenWidth] = useState('');
+  const [menWidth, setMenWidth] = useState('');
+  useEffect(() => {
+    const first = product.widthVariants?.[0]?.mm || '';
+    setWomenWidth(first);
+    setMenWidth(first);
+  }, [product.id, product.widthVariants]);
 
   const materialOf = (name: string) => name.replace(/\s+(14|18)ct$/, '');
   const caratOf = (name: string) => name.match(/(14ct|18ct)$/)?.[1] || '';
@@ -204,9 +215,22 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
   // The stone surcharge is added once to the pair, not per band, and it is
   // added here so this total is the only number the page has to trust.
   const metal = womenPrice + menPrice;
-  const total = metal > 0 ? metal + (womenEnabled ? stoneExtra : 0) : 0;
+  const womenWidthExtra = womenEnabled ? getWidthSurcharge(product, womenWidth) : 0;
+  const menWidthExtra = menEnabled ? getWidthSurcharge(product, menWidth) : 0;
+  const total = metal > 0
+    ? metal + (womenEnabled ? stoneExtra : 0) + womenWidthExtra + menWidthExtra
+    : 0;
 
   useEffect(() => { onPriceChange(total); }, [total, onPriceChange]);
+
+  // Report the chosen widths upward so the cart line records them.
+  useEffect(() => {
+    onWidthChange([
+      womenEnabled && womenWidth ? `${tl.womens}: ${womenWidth}` : '',
+      menEnabled && menWidth ? `${tl.mens}: ${menWidth}` : '',
+    ].filter(Boolean).join(' / '));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [womenEnabled, menEnabled, womenWidth, menWidth, onWidthChange]);
 
   const tl = {
     womens: language === 'sq' ? "Unaza e Gruas" : "Women's Ring",
@@ -214,6 +238,7 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
     material: language === 'sq' ? 'Materiali' : 'Material',
     carat: language === 'sq' ? 'Karatazhi' : 'Carat',
     size: language === 'sq' ? 'Madhësia' : 'Ring Size',
+    width: language === 'sq' ? 'Gjerësia' : 'Width',
     stone: language === 'sq' ? 'Guri' : 'Stone',
     stoneSize: language === 'sq' ? 'Madhësia e Gurit' : 'Stone Size',
     sizeAdj: language === 'sq' ? 'Rregullim falas i madhësisë' : 'Free size adjustment',
@@ -231,17 +256,18 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(118px, 1fr))', gap: 8,
   };
 
-  const genderRing = ({ title, enabled, onToggle, material, setMaterial, carat, setCarat, size, setSize, price, isWomen }: {
+  const genderRing = ({ title, enabled, onToggle, material, setMaterial, carat, setCarat, size, setSize, width, setWidth, price, isWomen }: {
     title: string; enabled: boolean; onToggle: () => void;
     material: string; setMaterial: (material: string) => void;
     carat: string; setCarat: (carat: string) => void;
     size: string; setSize: (s: string) => void;
+    width: string; setWidth: (w: string) => void;
     price: number;
     isWomen: boolean;
   }) => {
     // Stones belong to the women's ring, so show that exact configured price
     // here as well as in the order total.
-    const displayedPrice = price + (isWomen ? stoneExtra : 0);
+    const displayedPrice = price + (isWomen ? stoneExtra : 0) + getWidthSurcharge(product, width);
     return (
     <div className="couple-ring-card" style={{ border: `1px solid ${enabled ? '#1a0a0a' : '#e8e0d4'}`, transition: 'border-color 0.2s' }}>
       {/* Header with checkbox */}
@@ -285,6 +311,25 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
             </div>
           )}
           <div style={{ marginBottom: isWomen && product.stones?.length ? 20 : 0 }}>
+            {product.widthVariants && product.widthVariants.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.width}</p>
+                <div style={choiceGridStyle}>
+                  {product.widthVariants.map(w => {
+                    const extra = getWidthSurcharge(product, w.mm);
+                    return (
+                      <button key={w.mm} onClick={() => setWidth(w.mm)} style={variantBtn(width === w.mm)}>
+                        {w.mm}
+                        {extra > 0 && (
+                          <span style={{ marginLeft: 6, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{formatStoneSurcharge(extra)}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 10 }}>{tl.size}</p>
             <RingSizeSlider
               value={Number(size) || RING_SIZE_MIN}
@@ -320,9 +365,9 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 16 }}>{tl.selectGender}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {genderRing({ title: tl.womens, enabled: womenEnabled, onToggle: () => setWomenEnabled(!womenEnabled),
-          material: womenMaterial, setMaterial: setWomenMaterial, carat: womenCarat, setCarat: setWomenCarat, size: womenSize, setSize: setWomenSize, price: womenPrice, isWomen: true })}
+          material: womenMaterial, setMaterial: setWomenMaterial, carat: womenCarat, setCarat: setWomenCarat, size: womenSize, setSize: setWomenSize, width: womenWidth, setWidth: setWomenWidth, price: womenPrice, isWomen: true })}
         {genderRing({ title: tl.mens, enabled: menEnabled, onToggle: () => setMenEnabled(!menEnabled),
-          material: menMaterial, setMaterial: setMenMaterial, carat: menCarat, setCarat: setMenCarat, size: menSize, setSize: setMenSize, price: menPrice, isWomen: false })}
+          material: menMaterial, setMaterial: setMenMaterial, carat: menCarat, setCarat: setMenCarat, size: menSize, setSize: setMenSize, width: menWidth, setWidth: setMenWidth, price: menPrice, isWomen: false })}
       </div>
       {(womenEnabled || menEnabled) && (womenPrice > 0 || menPrice > 0) && (
         <div style={{ marginTop: 16, padding: '14px 20px', background: '#f7f3ee', border: '1px solid #e8e0d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -513,6 +558,8 @@ export default function ProductPage() {
   const [selectedStone, setSelectedStone] = useState('');
   const [selectedStoneSize, setSelectedStoneSize] = useState('');
   const [selectedWidth, setSelectedWidth] = useState('');
+  // For couple pieces each band reports its own width; this is only a label.
+  const [coupleWidthLabel, setCoupleWidthLabel] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [activeImg, setActiveImg] = useState(0);
   const [engraving, setEngraving] = useState({ enabled: false, text: '', symbol: '' });
@@ -621,7 +668,7 @@ export default function ProductPage() {
   };
 
   const displayPrice = product.hasCoupleOption
-    ? (couplePrice > 0 ? fmtEuro(couplePrice + widthExtra) : formatPrice(product))
+    ? (couplePrice > 0 ? fmtEuro(couplePrice) : formatPrice(product))
     : currentVariant
       ? variantPriceLabel(currentVariant)
       : (singleExtras && product.price > 0 ? fmtEuro(product.price + singleExtras) : formatPrice(product));
@@ -812,7 +859,8 @@ export default function ProductPage() {
             </div>
           )}
 
-          {product.widthVariants && product.widthVariants.length > 0 && (
+          {/* Couple pieces pick width per band, inside each card below. */}
+          {!product.hasCoupleOption && product.widthVariants && product.widthVariants.length > 0 && (
             <div style={rowStyle}>
               <span style={rowLabelStyle}>{language === 'sq' ? 'Gjerësia' : 'Width'}</span>
               <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -837,6 +885,7 @@ export default function ProductPage() {
               product={product}
               language={language}
               stoneExtra={stoneExtra}
+              onWidthChange={setCoupleWidthLabel}
               selectedStone={selectedStone}
               setSelectedStone={setSelectedStone}
               selectedStoneSize={selectedStoneSize}
@@ -981,10 +1030,14 @@ export default function ProductPage() {
               // Same surcharge the customer just read on screen. Couple pieces
               // already carry it inside their own total.
               if (!product.hasCoupleOption) unitPrice += stoneExtra;
-              // Width is charged once per order line, the same way the stone
-              // is — a couple set of 6mm bands carries it once, not twice.
-              unitPrice += widthExtra;
-              addToCart(product, 1, selectedVariant, selectedSize, unitPrice, selectedStone || undefined, selectedWidth || undefined);
+              // A couple piece already has each band's width inside its own
+              // total, so adding it again here would charge it twice.
+              if (!product.hasCoupleOption) unitPrice += widthExtra;
+              addToCart(
+                product, 1, selectedVariant, selectedSize, unitPrice,
+                selectedStone || undefined,
+                (product.hasCoupleOption ? coupleWidthLabel : selectedWidth) || undefined,
+              );
             }} style={{ padding: '15px', background: '#1a0a0a', color: '#fff', border: 'none', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#c9a84c'}
               onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = '#1a0a0a'}
