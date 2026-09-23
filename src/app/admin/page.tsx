@@ -908,11 +908,45 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <nav style={{ padding: '24px 0' }}>
-          <div style={{ padding: '10px 24px', background: '#2a1a1a', color: '#c9a84c', fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            <span>◆ {t.admin.products}</span>
-          </div>
-          <Link href="/" style={{ display: 'block', padding: '10px 24px', color: '#888', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', transition: 'color 0.2s' }}>
+        {/* The sections live here rather than in a top strip: six tabs across
+            the top pushed the content down and wrapped on a laptop, and the
+            sidebar was mostly empty anyway. */}
+        <nav style={{ padding: '16px 0', display: 'flex', flexDirection: 'column' }}>
+          {(['products', 'featured', 'pricing', 'orders', 'images', 'backups'] as const).map(tab => {
+            const active = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  textAlign: 'left', width: '100%',
+                  padding: '12px 24px',
+                  background: active ? '#2a1a1a' : 'transparent',
+                  borderLeft: `3px solid ${active ? '#c9a84c' : 'transparent'}`,
+                  borderTop: 'none', borderRight: 'none', borderBottom: 'none',
+                  color: active ? '#c9a84c' : '#8a7f7f',
+                  fontFamily: 'var(--font-sans)', fontSize: 11,
+                  fontWeight: active ? 700 : 500,
+                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                  cursor: 'pointer', transition: 'all 0.18s',
+                }}
+              >
+                  {tab === 'products'
+                    ? `${t.admin.products} (${products.length})`
+                    : tab === 'featured'
+                    ? `${language === 'sq' ? 'Kryefaqja' : 'Homepage'} (${products.filter(p => p.featured).length})`
+                    : tab === 'pricing'
+                    ? (language === 'sq' ? 'Formulat e Çmimeve' : 'Price Formulas')
+                    : tab === 'orders'
+                      ? `${language === 'sq' ? 'Porositë' : 'Orders'}${orders.length ? ` (${orders.length})` : ''}`
+                      : tab === 'images'
+                        ? (language === 'sq' ? 'Fotot e Faqes' : 'Site Images')
+                        : (language === 'sq' ? 'Backup & Aktiviteti' : 'Backups & Activity')}
+              </button>
+            );
+          })}
+
+          <Link href="/" style={{ display: 'block', padding: '12px 24px', marginTop: 12, color: '#666', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', textDecoration: 'none', borderTop: '1px solid #2a1a1a' }}>
             ← {t.nav.home}
           </Link>
         </nav>
@@ -940,35 +974,12 @@ export default function AdminPage() {
       {/* Main content */}
       <main style={{ flex: 1, background: '#fafaf8', overflowY: 'auto' }}>
         {/* Tab bar */}
-        <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0 }}>
-          <div className="admin-tabbar-tabs" style={{ display: 'flex' }}>
-            {(['products', 'featured', 'pricing', 'orders', 'images', 'backups'] as const).map(tab => (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                padding: '18px 24px', background: 'none', border: 'none',
-                borderBottom: `2px solid ${activeTab === tab ? '#c9a84c' : 'transparent'}`,
-                fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: activeTab === tab ? 700 : 500,
-                color: activeTab === tab ? '#1a0a0a' : '#888', cursor: 'pointer',
-                letterSpacing: '0.06em', textTransform: 'uppercase', transition: 'all 0.2s',
-              }}>
-                {tab === 'products'
-                  ? `${t.admin.products} (${products.length})`
-                  : tab === 'featured'
-                  ? `${language === 'sq' ? 'Kryefaqja' : 'Homepage'} (${products.filter(p => p.featured).length})`
-                  : tab === 'pricing'
-                  ? (language === 'sq' ? 'Formulat e Çmimeve' : 'Price Formulas')
-                  : tab === 'orders'
-                    ? `${language === 'sq' ? 'Porositë' : 'Orders'}${orders.length ? ` (${orders.length})` : ''}`
-                    : tab === 'images'
-                      ? (language === 'sq' ? 'Fotot e Faqes' : 'Site Images')
-                      : (language === 'sq' ? 'Backup & Aktiviteti' : 'Backups & Activity')}
-              </button>
-            ))}
-          </div>
+        <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 12, minHeight: 68 }}>
           {activeTab === 'products' && (
             <div style={{ display: 'flex', gap: 12, padding: '8px 0' }}>
               {saved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#27ae60', display: 'flex', alignItems: 'center', gap: 6 }}>✓ Saved!</span>}
               <button onClick={handleReset} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #e8e0d4', color: '#999', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Reset</button>
-              <button onClick={startAdd} className="btn-dark" style={{ padding: '10px 24px', fontSize: 10 }}>+ {t.admin.addProduct}</button>
+              <button onClick={startAdd} className="btn-dark" style={{ padding: '16px 38px', fontSize: 13, letterSpacing: '0.14em' }}>+ {t.admin.addProduct}</button>
             </div>
           )}
           {activeTab === 'images' && (
@@ -1900,12 +1911,17 @@ export default function AdminPage() {
 
           {/* Edit / Add Form */}
           {(editing || isAdding) && (
-            <div style={{ background: '#fff', border: '1px solid #e8e0d4', padding: '28px', position: 'sticky', top: 20, maxHeight: '90vh', overflowY: 'auto' }}>
-              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: '#1a0a0a', marginBottom: 24 }}>
+            /* The panel scrolls INSIDE itself, so Save used to sit at the
+               bottom of a very long internal scroll — every edit meant
+               scrolling the form to its end to commit. It is now a flex
+               column: a fixed header, a scrolling body, and an action bar
+               pinned to the bottom that never leaves the screen. */
+            <div style={{ background: '#fff', border: '1px solid #e8e0d4', position: 'sticky', top: 20, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: '#1a0a0a', padding: '24px 28px 16px', borderBottom: '1px solid #f0ebe3', flexShrink: 0 }}>
                 {isAdding ? t.admin.addProduct : t.admin.editProduct}
               </h3>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 28px', display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Name */}
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>{t.admin.productName} *</label>
@@ -2483,11 +2499,12 @@ export default function AdminPage() {
                   <label htmlFor="featured" style={{ fontSize: 12, color: '#444', cursor: 'pointer', fontWeight: 500 }}>{t.admin.featured} — show on homepage</label>
                 </div>
 
-                {/* Save/Cancel */}
-                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                  <button onClick={handleSave} className="btn-dark" style={{ flex: 1, textAlign: 'center' }}>{t.admin.save}</button>
-                  <button onClick={() => { setEditing(null); setIsAdding(false); }} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid #e8e0d4', color: '#888', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>{t.admin.cancel}</button>
-                </div>
+              </div>
+
+              {/* Pinned action bar — always on screen, whatever the scroll. */}
+              <div style={{ flexShrink: 0, display: 'flex', gap: 12, padding: '16px 28px', borderTop: '1px solid #e8e0d4', background: '#fff', boxShadow: '0 -6px 18px rgba(26,10,10,0.06)' }}>
+                <button onClick={handleSave} className="btn-dark" style={{ flex: 2, textAlign: 'center', padding: '14px' }}>{t.admin.save}</button>
+                <button onClick={() => { setEditing(null); setIsAdding(false); }} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid #e8e0d4', color: '#888', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>{t.admin.cancel}</button>
               </div>
             </div>
           )}
