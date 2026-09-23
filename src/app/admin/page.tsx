@@ -1913,35 +1913,51 @@ export default function AdminPage() {
 
                   {(form.widthVariants || []).length > 0 && (
                     <div style={{ border: '1px solid #e8e0d4', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '54px 1fr 110px', gap: 10 }}>
-                        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
-                          {language === 'sq' ? 'Gjer.' : 'Width'}
-                        </span>
-                        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
-                          {language === 'sq' ? 'URL e fotos' : 'Photo URL'}
-                        </span>
-                        <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
-                          {language === 'sq' ? 'Shtesë €' : 'Surcharge €'}
-                        </span>
-                      </div>
                       {(form.widthVariants || []).map(w => {
                         const patch = (next: Partial<WidthVariant>) => setForm({
                           ...form,
                           widthVariants: (form.widthVariants || []).map(item => item.mm === w.mm ? { ...item, ...next } : item),
                         });
                         return (
-                          <div key={w.mm} style={{ display: 'grid', gridTemplateColumns: '54px 1fr 110px', gap: 10, alignItems: 'center' }}>
-                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: '#1a0a0a' }}>{w.mm}</span>
-                            <input
-                              type="text" className="ds-input" placeholder="https://…"
-                              value={w.image || ''}
-                              onChange={e => patch({ image: e.target.value })}
+                          <div key={w.mm} style={{ background: '#f7f3ee', padding: '12px 14px', border: '1px solid #e8e0d4' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+                              <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color: '#1a0a0a' }}>{w.mm}</p>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#888' }}>
+                                  {language === 'sq' ? 'Shtesë €' : 'Surcharge €'}
+                                </span>
+                                <input
+                                  type="number" className="ds-input" min="0" step="10" placeholder="0"
+                                  value={w.surcharge ?? ''}
+                                  onChange={e => patch({ surcharge: e.target.value ? Number(e.target.value) : undefined })}
+                                  style={{ width: 110 }}
+                                />
+                              </label>
+                            </div>
+
+                            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>
+                              {language === 'sq' ? `Foto për ${w.mm}` : `${w.mm} photo`}
+                            </p>
+                            {/* Same drag-and-drop uploader as the material photos. A URL
+                                field is useless to an operator holding a photo on their
+                                phone; it is kept below, folded away, for the rare case
+                                where the image already lives somewhere. */}
+                            <CloudinaryUploader
+                              currentUrl={w.image || ''}
+                              onUploaded={url => patch({ image: url })}
+                              language={language}
                             />
-                            <input
-                              type="number" className="ds-input" min="0" step="10" placeholder="0"
-                              value={w.surcharge ?? ''}
-                              onChange={e => patch({ surcharge: e.target.value ? Number(e.target.value) : undefined })}
-                            />
+                            <details style={{ marginTop: 7 }}>
+                              <summary style={{ cursor: 'pointer', fontSize: 10, color: '#888', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>
+                                {language === 'sq' ? 'ose ngjit një URL manualisht' : 'or paste a URL manually'}
+                              </summary>
+                              <input
+                                type="text" className="ds-input" placeholder="https://…"
+                                value={w.image || ''}
+                                onChange={e => patch({ image: e.target.value })}
+                                style={{ marginTop: 6 }}
+                              />
+                            </details>
                           </div>
                         );
                       })}
