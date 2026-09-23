@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -167,7 +167,7 @@ function EngravingSection({ language, onEngravingChange }: {
 function CoupleSection({ product, language, stoneExtra, selectedStone, setSelectedStone, selectedStoneSize, setSelectedStoneSize, onPreviewVariantChange, onPriceChange, onWidthChange }: {
   product: Product;
   stoneExtra: number;
-  onWidthChange: (label: string) => void;
+  onWidthChange: (label: string, photoMm: string) => void;
   language: string;
   selectedStone: string;
   setSelectedStone: (stone: string) => void;
@@ -189,10 +189,13 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
   // band's surcharge — a pair-level width would charge them for two.
   const [womenWidth, setWomenWidth] = useState('');
   const [menWidth, setMenWidth] = useState('');
+  /** The width whose photo is showing — whichever band was changed last. */
+  const [photoMm, setPhotoMm] = useState('');
   useEffect(() => {
     const first = product.widthVariants?.[0]?.mm || '';
     setWomenWidth(first);
     setMenWidth(first);
+    setPhotoMm(first);
   }, [product.id, product.widthVariants]);
 
   const materialOf = (name: string) => name.replace(/\s+(14|18)ct$/, '');
@@ -225,12 +228,15 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
 
   // Report the chosen widths upward so the cart line records them.
   useEffect(() => {
-    onWidthChange([
-      womenEnabled && womenWidth ? `${tl.womens}: ${womenWidth}` : '',
-      menEnabled && menWidth ? `${tl.mens}: ${menWidth}` : '',
-    ].filter(Boolean).join(' / '));
+    onWidthChange(
+      [
+        womenEnabled && womenWidth ? `${tl.womens}: ${womenWidth}` : '',
+        menEnabled && menWidth ? `${tl.mens}: ${menWidth}` : '',
+      ].filter(Boolean).join(' / '),
+      photoMm,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [womenEnabled, menEnabled, womenWidth, menWidth, onWidthChange]);
+  }, [womenEnabled, menEnabled, womenWidth, menWidth, photoMm, onWidthChange]);
 
   const tl = {
     womens: language === 'sq' ? "Unaza e Gruas" : "Women's Ring",
@@ -365,9 +371,9 @@ function CoupleSection({ product, language, stoneExtra, selectedStone, setSelect
       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#999', marginBottom: 16 }}>{tl.selectGender}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {genderRing({ title: tl.womens, enabled: womenEnabled, onToggle: () => setWomenEnabled(!womenEnabled),
-          material: womenMaterial, setMaterial: setWomenMaterial, carat: womenCarat, setCarat: setWomenCarat, size: womenSize, setSize: setWomenSize, width: womenWidth, setWidth: setWomenWidth, price: womenPrice, isWomen: true })}
+          material: womenMaterial, setMaterial: setWomenMaterial, carat: womenCarat, setCarat: setWomenCarat, size: womenSize, setSize: setWomenSize, width: womenWidth, setWidth: (w: string) => { setWomenWidth(w); setPhotoMm(w); }, price: womenPrice, isWomen: true })}
         {genderRing({ title: tl.mens, enabled: menEnabled, onToggle: () => setMenEnabled(!menEnabled),
-          material: menMaterial, setMaterial: setMenMaterial, carat: menCarat, setCarat: setMenCarat, size: menSize, setSize: setMenSize, width: menWidth, setWidth: setMenWidth, price: menPrice, isWomen: false })}
+          material: menMaterial, setMaterial: setMenMaterial, carat: menCarat, setCarat: setMenCarat, size: menSize, setSize: setMenSize, width: menWidth, setWidth: (w: string) => { setMenWidth(w); setPhotoMm(w); }, price: menPrice, isWomen: false })}
       </div>
       {(womenEnabled || menEnabled) && (womenPrice > 0 || menPrice > 0) && (
         <div style={{ marginTop: 16, padding: '14px 20px', background: '#f7f3ee', border: '1px solid #e8e0d4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -560,6 +566,16 @@ export default function ProductPage() {
   const [selectedWidth, setSelectedWidth] = useState('');
   // For couple pieces each band reports its own width; this is only a label.
   const [coupleWidthLabel, setCoupleWidthLabel] = useState('');
+
+  /**
+   * A couple piece chooses width per band, so the parent has no single width
+   * of its own — but the gallery still needs one to know which photo to show.
+   * The band the customer touched last wins.
+   */
+  const handleCoupleWidth = useCallback((label: string, photoMm: string) => {
+    setCoupleWidthLabel(label);
+    setSelectedWidth(photoMm);
+  }, []);
   const [selectedColor, setSelectedColor] = useState('');
   const [activeImg, setActiveImg] = useState(0);
   const [engraving, setEngraving] = useState({ enabled: false, text: '', symbol: '' });
@@ -651,6 +667,13 @@ export default function ProductPage() {
   // the same setting, so the stone is a surcharge on top of whatever the metal,
   // carat and ring size already cost.
   const stoneExtra = getStoneSurcharge(product, selectedStone);
+  /**
+   * CAREFUL: on a COUPLE piece `selectedWidth` is only the width whose PHOTO
+   * is showing — each band owns its own width and its own surcharge inside
+   * CoupleSection. So `widthExtra` must never be added to a couple total; both
+   * places that use it below are guarded on `hasCoupleOption`, and anything
+   * added later must be too, or the pair gets charged for width twice.
+   */
   const widthExtra = getWidthSurcharge(product, selectedWidth);
   // Everything the customer added on top of the metal price. Kept as one
   // number so the label, the Add-to-cart price and the order can never
@@ -885,7 +908,7 @@ export default function ProductPage() {
               product={product}
               language={language}
               stoneExtra={stoneExtra}
-              onWidthChange={setCoupleWidthLabel}
+              onWidthChange={handleCoupleWidth}
               selectedStone={selectedStone}
               setSelectedStone={setSelectedStone}
               selectedStoneSize={selectedStoneSize}
