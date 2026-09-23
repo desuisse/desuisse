@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -429,11 +429,54 @@ function InfoTiles({ language }: { language: string }) {
   );
 }
 
+/**
+ * Fires once when an element first scrolls into view.
+ *
+ * `once` matters: a section that re-animates every time it passes the
+ * viewport reads as a glitch on the way back up, not as polish.
+ * `rootMargin` starts the animation slightly BEFORE the element reaches the
+ * fold, so by the time the customer is looking at it the movement is already
+ * settling rather than just beginning.
+ */
+function useInView<T extends HTMLElement>(rootMargin = '0px 0px -12% 0px') {
+  const ref = useRef<T>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // No IntersectionObserver (or reduced motion): show it, never hide content
+    // behind an animation that will not run.
+    if (typeof IntersectionObserver === 'undefined'
+      || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setInView(true);
+      return;
+    }
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setInView(true); obs.disconnect(); }
+    }, { threshold: 0.15, rootMargin });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [rootMargin]);
+
+  return { ref, inView };
+}
+
 // ── deSuisse Box — no dark background ────────────────────────
 function DesuisseBox({ language }: { language: string }) {
+  const { ref, inView } = useInView<HTMLDivElement>();
+
+  // The copy leads, the photograph follows a beat later. Moving both at once
+  // reads as the page stuttering; the small offset reads as intent.
+  const rise = (delay: number): React.CSSProperties => ({
+    opacity: inView ? 1 : 0,
+    transform: inView ? 'translateY(0)' : 'translateY(32px)',
+    transition: `opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`,
+  });
+
   return (
-    <div style={{ borderTop: '1px solid #e8e0d4', borderBottom: '1px solid #e8e0d4', padding: '60px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
-      <div>
+    <div ref={ref} style={{ borderTop: '1px solid #e8e0d4', borderBottom: '1px solid #e8e0d4', padding: '60px 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+      <div style={rise(0)}>
         <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c9a84c', marginBottom: 14 }}>✦ deSuisse</p>
         <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(1.8rem, 3vw, 2.5rem)', fontWeight: 400, color: '#1a0a0a', marginBottom: 16 }}>
           {language === 'sq' ? 'Kutia deSuisse' : 'The deSuisse Box'}
@@ -448,8 +491,8 @@ function DesuisseBox({ language }: { language: string }) {
             { icon: '◆', en: 'Luxury box', sq: 'Kuti luksoze' },
             { icon: '◆', en: 'Certificate', sq: 'Certifikatë' },
             { icon: '◆', en: 'Gift bag', sq: 'Çantë dhuratë' },
-          ].map(item => (
-            <div key={item.en} style={{ textAlign: 'center' }}>
+          ].map((item, i) => (
+            <div key={item.en} style={{ textAlign: 'center', ...rise(420 + i * 110) }}>
               <p style={{ color: '#c9a84c', fontSize: 16, marginBottom: 8 }}>{item.icon}</p>
               <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                 {language === 'sq' ? item.sq : item.en}
@@ -462,7 +505,7 @@ function DesuisseBox({ language }: { language: string }) {
       {/* Right side: the real packaging photo. Square source in a 4:3 frame,
           so `cover` crops the silk at top and bottom rather than letterboxing
           the boxes — the bag, box and card all stay in view. */}
-      <div style={{ aspectRatio: '4/3', border: '1px solid #e8e0d4', position: 'relative', overflow: 'hidden', background: '#faf8f5' }}>
+      <div style={{ aspectRatio: '4/3', border: '1px solid #e8e0d4', position: 'relative', overflow: 'hidden', background: '#faf8f5', ...rise(180) }}>
         <Image
           src="/images/desuisse-box.webp"
           alt={language === 'sq'
@@ -470,7 +513,13 @@ function DesuisseBox({ language }: { language: string }) {
             : 'deSuisse packaging — the box, gift bag and certificate card'}
           fill
           sizes="(max-width: 900px) 100vw, 640px"
-          style={{ objectFit: 'cover' }}
+          style={{
+            objectFit: 'cover',
+            // A slow settle out of a 6% zoom. Scaling the IMAGE rather than its
+            // frame keeps the border still while the photograph comes to rest.
+            transform: inView ? 'scale(1)' : 'scale(1.06)',
+            transition: 'transform 1.4s cubic-bezier(0.22, 1, 0.36, 1) 180ms',
+          }}
         />
       </div>
     </div>
