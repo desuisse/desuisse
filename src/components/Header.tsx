@@ -67,7 +67,17 @@ export default function Header() {
       requestAnimationFrame(() => {
         const y = window.scrollY;
         const prev = lastScrollRef.current;
-        setScrolled(y > 40);
+        /* HYSTERESIS, not a single threshold.
+           The header is `position: sticky`, so it sits in the document flow:
+           condensing it takes the row from 104px to 76px and shifts every-
+           thing below up by 28px. With one trigger at y > 40, that shift
+           could carry the scroll position back under the trigger, which
+           expanded the header, which pushed the page back down, which
+           condensed it again — the flicker.
+           Condensing at 80 and expanding only below 24 leaves a 56px dead
+           band, comfortably wider than the 28px the header itself moves, so
+           the height change can no longer re-trigger the state. */
+        setScrolled(was => (was ? y > 24 : y > 80));
         if (y > 160 && y - prev > 8) setHidden(true);
         else if (prev - y > 8) setHidden(false);
         lastScrollRef.current = y;
