@@ -35,7 +35,14 @@ export interface ColorVariant {
 export interface WidthVariant {
   /** '4mm' — one of WIDTH_OPTIONS. */
   mm: string;
-  /** Photo for this width; falls back to the product's main image. */
+  /**
+   * Photo per metal for this width, keyed by the METAL ONLY — 'Yellow Gold',
+   * not 'Yellow Gold 14ct'. A 6mm band in yellow and in white gold are two
+   * different photographs; the carat is not visible in a picture, so 14ct and
+   * 18ct of the same metal share one.
+   */
+  images?: Record<string, string>;
+  /** Fallback photo for this width when a metal has none of its own. */
   image?: string;
   /** Euros ADDED to the material price. 0 or absent = no surcharge. */
   surcharge?: number;
@@ -317,6 +324,25 @@ export function isEnquiryStone(stone: string | null | undefined): boolean {
 /** Contact-form link carrying what the customer was looking at. */
 export function enquiryHref(productName: string, stone: string): string {
   return `/contact?about=${encodeURIComponent(`${productName} — ${stone}`)}`;
+}
+
+/**
+ * The photo for a width in a given metal, most specific first:
+ * this width in this metal → this width's fallback → nothing (the caller
+ * then falls back to the colour gallery, the material photo, the main image).
+ *
+ * `variantName` may carry a carat ('Rose Gold 18ct'); only the metal is used.
+ */
+export function widthImageFor(
+  product: Pick<Product, 'widthVariants'> | null | undefined,
+  mm: string | undefined | null,
+  variantName?: string | null,
+): string {
+  if (!product || !mm || !product.widthVariants) return '';
+  const w = product.widthVariants.find(v => v.mm === mm);
+  if (!w) return '';
+  const metal = (variantName || '').replace(/\s+(14|18)ct$/, '').trim();
+  return (metal && w.images?.[metal]) || w.image || '';
 }
 
 export function getWidthSurcharge(

@@ -506,11 +506,19 @@ export default function AdminPage() {
     // Only widths that are actually ticked survive, each with a sane surcharge.
     const cleanWidthVariants: WidthVariant[] = (form.widthVariants || [])
       .filter(w => WIDTH_OPTIONS.includes(w.mm))
-      .map(w => ({
-        mm: w.mm,
-        ...(w.image ? { image: sanitizeUrl(w.image) } : {}),
-        ...(w.surcharge && w.surcharge > 0 ? { surcharge: sanitizeNumber(w.surcharge, 0, 999999) } : {}),
-      }))
+      .map(w => {
+        const images = Object.entries(w.images || {}).reduce((acc, [metal, url]) => {
+          const clean = url ? sanitizeUrl(url) : '';
+          if (clean) acc[sanitizeText(metal, 40)] = clean;
+          return acc;
+        }, {} as Record<string, string>);
+        return {
+          mm: w.mm,
+          ...(Object.keys(images).length ? { images } : {}),
+          ...(w.image ? { image: sanitizeUrl(w.image) } : {}),
+          ...(w.surcharge && w.surcharge > 0 ? { surcharge: sanitizeNumber(w.surcharge, 0, 999999) } : {}),
+        };
+      })
       .sort((a, b) => parseFloat(a.mm) - parseFloat(b.mm));
 
     const cleanColorVariants = (form.colorVariants || []).map(color => ({
@@ -895,11 +903,16 @@ export default function AdminPage() {
 
   // ADMIN DASHBOARD
   return (
-    <div className="admin-shell" style={{ display: 'flex', minHeight: '100vh', fontFamily: 'var(--font-sans)' }}>
+    /* height:100vh + overflow:hidden makes this a fixed app frame. Without
+       it `main` had `overflow-y:auto` but no height, so it was NOT a scroll
+       container — and an ancestor with overflow:auto silently disables
+       `position: sticky` on everything inside it. That is why the Save bar
+       would not stay put however it was styled. */
+    <div className="admin-shell" style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'var(--font-sans)' }}>
 
       {/* Sidebar — collapsible, so the product list can use the full width */}
       {navOpen && (
-      <aside className="admin-sidebar" style={{ padding: '32px 0' }}>
+      <aside className="admin-sidebar" style={{ padding: '32px 0', height: '100vh', overflowY: 'auto' }}>
         <div style={{ padding: '0 24px 32px', borderBottom: '1px solid #2a1a1a' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -977,9 +990,9 @@ export default function AdminPage() {
       )}
 
       {/* Main content */}
-      <main style={{ flex: 1, background: '#fafaf8', overflowY: 'auto' }}>
+      <main style={{ flex: 1, minWidth: 0, background: '#fafaf8', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Tab bar */}
-        <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, minHeight: 68 }}>
+        <div className="admin-tabbar" style={{ background: '#fff', borderBottom: '1px solid #e8e0d4', padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, minHeight: 68, flexShrink: 0 }}>
           <button
             onClick={() => setNavOpen(o => !o)}
             aria-label={navOpen ? 'Hide menu' : 'Show menu'}
@@ -1008,6 +1021,10 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* The single scrolling region. Because it has a real height, the
+            sticky edit panel inside it finally works. */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
 
         {/* ── ORDERS TAB ── */}
         {activeTab === 'orders' && (
@@ -1939,7 +1956,7 @@ export default function AdminPage() {
                scrolling the form to its end to commit. It is now a flex
                column: a fixed header, a scrolling body, and an action bar
                pinned to the bottom that never leaves the screen. */
-            <div style={{ background: '#fff', border: '1px solid #e8e0d4', position: 'sticky', top: 20, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ background: '#fff', border: '1px solid #e8e0d4', position: 'sticky', top: 0, height: 'calc(100vh - 132px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: '#1a0a0a', padding: '24px 28px 16px', borderBottom: '1px solid #f0ebe3', flexShrink: 0 }}>
                 {isAdding ? t.admin.addProduct : t.admin.editProduct}
               </h3>
@@ -2054,28 +2071,64 @@ export default function AdminPage() {
                               </label>
                             </div>
 
-                            <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 7 }}>
-                              {language === 'sq' ? `Foto për ${w.mm}` : `${w.mm} photo`}
-                            </p>
-                            {/* Same drag-and-drop uploader as the material photos. A URL
-                                field is useless to an operator holding a photo on their
-                                phone; it is kept below, folded away, for the rare case
-                                where the image already lives somewhere. */}
-                            <CloudinaryUploader
-                              currentUrl={w.image || ''}
-                              onUploaded={url => patch({ image: url })}
-                              language={language}
-                            />
-                            <details style={{ marginTop: 7 }}>
+                            {/* A photo per METAL for this width — a 6mm yellow band
+                                and a 6mm white one are different photographs. Only
+                                the metals this product actually offers are listed,
+                                so there is nothing to fill in that you cannot make. */}
+                            {(() => {
+                              const metals = MATERIAL_OPTIONS.filter(mat =>
+                                (form.materialVariants || []).some(v => v.name.startsWith(mat)),
+                              );
+                              const setMetalImage = (metal: string, url: string) =>
+                                patch({ images: { ...(w.images || {}), [metal]: url } });
+
+                              if (metals.length === 0) {
+                                return (
+                                  <p style={{ fontFamily: 'var(--font-sans)', fontSize: 11, color: '#bbb', lineHeight: 1.6 }}>
+                                    {language === 'sq'
+                                      ? 'Zgjidhni së pari materialet më poshtë, pastaj shtoni një foto për secilin në këtë gjerësi.'
+                                      : 'Pick the materials below first, then add a photo of this width in each.'}
+                                  </p>
+                                );
+                              }
+
+                              return (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+                                  {metals.map(metal => (
+                                    <div key={metal}>
+                                      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: '#888', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                                        {metal}
+                                      </p>
+                                      <CloudinaryUploader
+                                        currentUrl={(w.images || {})[metal] || ''}
+                                        onUploaded={url => setMetalImage(metal, url)}
+                                        language={language}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+
+                            <details style={{ marginTop: 10 }}>
                               <summary style={{ cursor: 'pointer', fontSize: 10, color: '#888', fontFamily: 'var(--font-sans)', userSelect: 'none' }}>
-                                {language === 'sq' ? 'ose ngjit një URL manualisht' : 'or paste a URL manually'}
+                                {language === 'sq'
+                                  ? `Foto rezervë për ${w.mm} (kur një metal s'ka foton e vet)`
+                                  : `Fallback photo for ${w.mm} (used when a metal has none)`}
                               </summary>
-                              <input
-                                type="text" className="ds-input" placeholder="https://…"
-                                value={w.image || ''}
-                                onChange={e => patch({ image: e.target.value })}
-                                style={{ marginTop: 6 }}
-                              />
+                              <div style={{ marginTop: 8 }}>
+                                <CloudinaryUploader
+                                  currentUrl={w.image || ''}
+                                  onUploaded={url => patch({ image: url })}
+                                  language={language}
+                                />
+                                <input
+                                  type="text" className="ds-input" placeholder="https://…"
+                                  value={w.image || ''}
+                                  onChange={e => patch({ image: e.target.value })}
+                                  style={{ marginTop: 6 }}
+                                />
+                              </div>
                             </details>
                           </div>
                         );
@@ -2533,6 +2586,7 @@ export default function AdminPage() {
           )}
         </div>
         )}
+        </div>
       </main>
     </div>
   );

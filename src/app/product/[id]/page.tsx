@@ -10,7 +10,7 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, getWidthSurcharge, materialLabel, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, getWidthSurcharge, widthImageFor, materialLabel, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
 import FeatureCards, { FeatureItem } from '@/components/FeatureCards';
 import { sanitizeEngraving } from '@/lib/security';
@@ -754,12 +754,13 @@ export default function ProductPage() {
   const isPriceRange = !product.hasCoupleOption && !ringSizePriceApplies && !!currentVariant?.priceMax && currentVariant.priceMax > currentVariant.price;
 
   const selectedColorVariant = product.colorVariants?.find(color => color.name === selectedColor);
-  const selectedWidthVariant = product.widthVariants?.find(w => w.mm === selectedWidth);
+  // Width AND metal decide the photo: a 6mm yellow band is not a 6mm white one.
+  const widthPhoto = widthImageFor(product, selectedWidth, selectedVariant);
   // Width photo first — it is the narrowest choice the customer made, and a
   // 2mm band genuinely does not look like an 8mm one. Then a colour gallery,
   // then the material photo, then the product's own images.
-  const images = selectedWidthVariant?.image
-    ? [selectedWidthVariant.image]
+  const images = widthPhoto
+    ? [widthPhoto]
     : selectedColorVariant?.images?.length
       ? selectedColorVariant.images
       : [currentVariant?.image || product.image, product.image2].filter(Boolean) as string[];
