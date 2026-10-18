@@ -20,6 +20,7 @@ import { createHash, timingSafeEqual } from 'crypto';
 import { createSession, SESSION_COOKIE_NAME } from '@/lib/session';
 import { checkAndRecord, clear, getClientIp } from '@/lib/rateLimit';
 import { isUpstashConfigured } from '@/lib/upstash';
+import { verifyAdminUser } from '@/lib/adminUsers';
 
 const MAX_ATTEMPTS = 5;
 const WINDOW_SECONDS = 15 * 60;   // 15 minutes
@@ -63,8 +64,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
-  const { password } = body as Record<string, unknown>;
+  const { password, username } = body as Record<string, unknown>;
   if (typeof password !== 'string' || password.length < 1 || password.length > 128) {
+    return NextResponse.json({ error: 'Invalid credentials', attemptsLeft: limit.attemptsLeft }, { status: 401 });
+  }
+  if (username !== undefined && (typeof username !== 'string' || username.length > 32)) {
     return NextResponse.json({ error: 'Invalid credentials', attemptsLeft: limit.attemptsLeft }, { status: 401 });
   }
 
@@ -74,7 +78,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  if (!safeCompare(password, serverPwd)) {
+  const requestedUser = typeof username === 'string' ? username.trim() : '';
+  const authenticatedUser = requestedUser === '' || requestedUser.toLowerCase() === 'lorik'
+    ? (safeCompare(password, serverPwd) ? 'Lorik' : null)
+    : await verifyAdminUser(requestedUser, password);
+  if (!authenticatedUser) {
     return NextResponse.json({ error: 'Invalid credentials', attemptsLeft: limit.attemptsLeft }, { status: 401 });
   }
 
@@ -82,12 +90,12 @@ export async function POST(req: NextRequest) {
   await clear(rateKey);
 
   // Create a server-side session
-  const token = await createSession();
+  const token = await createSession(authenticatedUser);
   if (!token) {
     return NextResponse.json({ error: 'Could not create session. Check Upstash configuration.' }, { status: 500 });
   }
 
-  const res = NextResponse.json({ success: true }, { status: 200 });
+  const res = NextResponse.json({ success: true, username: authenticatedUser }, { status: 200 });
   res.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

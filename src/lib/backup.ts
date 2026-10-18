@@ -36,6 +36,7 @@ export interface ActivityEntry {
   action: 'save' | 'restore' | 'import' | 'reset' | 'snapshot';
   productCount: number;
   ip: string;
+  username?: string;
   note?: string;
 }
 

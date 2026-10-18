@@ -7,7 +7,7 @@
  * the monthly auto-snapshot rhythm.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateRequest } from '@/lib/session';
+import { getRequestAdmin } from '@/lib/session';
 import { kvGetJson, isUpstashConfigured } from '@/lib/upstash';
 import { createManualSnapshot, logActivity } from '@/lib/backup';
 import { getClientIp } from '@/lib/rateLimit';
@@ -16,7 +16,8 @@ import { Product } from '@/data/products';
 const KV_KEY = 'ds:products';
 
 export async function POST(req: NextRequest) {
-  if (!await authenticateRequest(req)) {
+  const username = await getRequestAdmin(req);
+  if (!username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (!isUpstashConfigured()) {
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
     action: 'snapshot',
     productCount: products.length,
     ip: getClientIp(req),
+    username,
     note: 'Manual snapshot',
   }).catch(() => {});
 

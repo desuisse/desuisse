@@ -43,7 +43,7 @@ npm start
 
 ## 🔐 Admin Panel (`/admin`)
 
-**Password:** `desuisse2024`
+The original admin signs in as **Lorik** with the password held in the server-side `ADMIN_PASSWORD` environment variable. Lorik can create named admin logins on the **Administrators** tab. See [the admin guide](public/ADMIN_GUIDE_FOR_COLLEAGUE.md).
 
 Your colleague can use the admin panel to:
 - ✅ **Add** new products (name, price, category, image URL, description)
@@ -53,7 +53,7 @@ Your colleague can use the admin panel to:
 - ✅ **Set hover image** (second image shown on hover)
 - ✅ **Search & filter** by category
 
-> To change the admin password, edit `ADMIN_PASSWORD` in `src/app/admin/page.tsx`
+> To change Lorik's password, update `ADMIN_PASSWORD` in the deployment environment and redeploy. Never put admin passwords in source code.
 
 ---
 
@@ -65,7 +65,7 @@ The header has an **ALB | EN** switcher. The language preference is saved in the
 
 ## 🗄️ Product Storage
 
-Products are stored in the **browser's localStorage**, so they persist across page refreshes. For a production setup with a real database, replace the `getProducts()` / `saveProducts()` functions in `src/data/products.ts` with API calls.
+Products and named admin accounts are stored in **Upstash Redis**. Admin passwords are stored as bcrypt hashes. Product publisher names are assigned by the server from the signed-in admin session. The original catalogue is attributed to Lorik.
 
 ---
 

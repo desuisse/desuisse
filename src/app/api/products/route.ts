@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DEFAULT_PRODUCTS, Product } from '@/data/products';
 import { kvGetJson, kvSetJson, isUpstashConfigured } from '@/lib/upstash';
-import { authenticateRequest } from '@/lib/session';
+import { getRequestAdmin } from '@/lib/session';
 import { maybeCreateMonthlySnapshot, logActivity } from '@/lib/backup';
 import { getClientIp } from '@/lib/rateLimit';
 
@@ -18,6 +18,7 @@ const MAX_FIELD_LEN = 4000;         // per-string field cap
 
 function normaliseProduct(p: Product): Product {
   const result: Product = { ...p };
+  if (!result.publishedBy) result.publishedBy = 'Lorik';
   if (!result.materials)        result.materials = [];
   if (!result.sizes)            result.sizes = [];
   if (!result.materialVariants) result.materialVariants = [];
@@ -42,7 +43,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid content type' }, { status: 415 });
   }
 
-  if (!await authenticateRequest(req)) {
+  const username = await getRequestAdmin(req);
+  if (!username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   // Filter to valid-looking products. We're permissive about optional fields
   // but strict about the required ones and about field length.
-  const products = (body as unknown[]).filter(p => {
+  const submitted = (body as unknown[]).filter(p => {
     if (!p || typeof p !== 'object') return false;
     const o = p as Record<string, unknown>;
     return (
@@ -78,6 +80,17 @@ export async function POST(req: NextRequest) {
       typeof o.image === 'string' && o.image.length <= MAX_FIELD_LEN
     );
   }) as Product[];
+
+  // The publisher comes from the authenticated session, never from the
+  // browser payload. Preserve the first publisher on later edits/reorders.
+  const previous = (await kvGetJson<Product[]>(KV_KEY)) ?? DEFAULT_PRODUCTS;
+  const previousById = new Map(previous.map(product => [product.id, product]));
+  const products = submitted.map(product => ({
+    ...product,
+    publishedBy: previousById.has(product.id)
+      ? previousById.get(product.id)?.publishedBy || 'Lorik'
+      : username,
+  }));
 
   const ok = await kvSetJson(KV_KEY, products);
   if (!ok) {
@@ -97,6 +110,7 @@ export async function POST(req: NextRequest) {
     action,
     productCount: products.length,
     ip: getClientIp(req),
+    username,
   }).catch(err => console.error('[products] logActivity failed:', err));
 
   return NextResponse.json({ success: true, count: products.length }, { status: 200 });

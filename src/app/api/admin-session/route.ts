@@ -5,11 +5,12 @@
  * admin UI on initial load.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateRequest } from '@/lib/session';
+import { getRequestAdmin } from '@/lib/session';
 
 export async function GET(req: NextRequest) {
-  if (!await authenticateRequest(req)) {
+  const username = await getRequestAdmin(req);
+  if (!username) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
-  return NextResponse.json({ authenticated: true }, { status: 200 });
+  return NextResponse.json({ authenticated: true, username }, { status: 200 });
 }

@@ -6,7 +6,7 @@
  * (so you could un-restore by picking the snapshot from just before this).
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateRequest } from '@/lib/session';
+import { getRequestAdmin } from '@/lib/session';
 import { kvSetJson, isUpstashConfigured } from '@/lib/upstash';
 import { loadSnapshot, createManualSnapshot, logActivity } from '@/lib/backup';
 import { getClientIp } from '@/lib/rateLimit';
@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid content type' }, { status: 415 });
   }
 
-  if (!await authenticateRequest(req)) {
+  const username = await getRequestAdmin(req);
+  if (!username) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Snapshot not found' }, { status: 404 });
   }
 
-  const ok = await kvSetJson(KV_KEY, products);
+  const ok = await kvSetJson(KV_KEY, products.map(product => ({ ...product, publishedBy: product.publishedBy || 'Lorik' })));
   if (!ok) {
     return NextResponse.json({ error: 'Failed to restore' }, { status: 502 });
   }
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
     action: 'restore',
     productCount: products.length,
     ip: getClientIp(req),
+    username,
     note: `Restored from snapshot ${id}`,
   }).catch(err => console.error('[restore] log failed:', err));
 

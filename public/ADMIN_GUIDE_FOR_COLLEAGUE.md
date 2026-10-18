@@ -17,10 +17,19 @@ You'll need:
 ## Step 1: Log in
 
 1. Open your browser and go to: **desuisse.com/admin**
-2. Type your admin password
+2. Enter your admin name and your own password. The original login name is **Lorik**.
 3. Click **Sign In**
 
 If you get a "too many attempts" message, wait 15 minutes and try again.
+
+## Add Naim or Arba as an admin (Lorik only)
+
+1. Sign in at **desuisse.com/admin** as **Lorik** with the existing admin password.
+2. Open **Administrators** in the left menu.
+3. Enter **Naim** or **Arba**, choose a different password of at least 12 characters for each person, and click **Add administrator**.
+4. Give each person their own login details privately. They enter their name and password on the same admin login page.
+
+Only Lorik can add or remove admins. To revoke someone's access, click **Remove** beside their name; their active sessions stop working. Every product row shows **Published by**. Existing products show Lorik, and new products show the admin who first saves them. Editing a product does not change its publisher.
 
 ---
 

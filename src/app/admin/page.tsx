@@ -73,6 +73,8 @@ export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [password, setPassword] = useState('');
+  const [loginName, setLoginName] = useState('Lorik');
+  const [currentAdmin, setCurrentAdmin] = useState('');
   const [loginError, setLoginError] = useState('');
   const [lockoutInfo, setLockoutInfo] = useState<{ limited: boolean; remainingMs: number; attemptsLeft: number } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -88,7 +90,11 @@ export default function AdminPage() {
   const [pricingRules, setPricingRules] = useState<PricingRules>(DEFAULT_PRICING_RULES);
   const [rulesSaved, setRulesSaved] = useState(false);
   const [ruleCategory, setRuleCategory] = useState<Product['category']>('wedding-rings');
-  const [activeTab, setActiveTab] = useState<'products' | 'featured' | 'pricing' | 'orders' | 'images' | 'backups'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'featured' | 'pricing' | 'orders' | 'images' | 'backups' | 'admins'>('products');
+  const [adminUsers, setAdminUsers] = useState<{ name: string; createdAt: number }[]>([]);
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [adminUsersMessage, setAdminUsersMessage] = useState('');
   const [page, setPage] = useState(1);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -100,27 +106,23 @@ export default function AdminPage() {
 
   // Backup tab state
   interface SnapshotMeta { id: string; createdAt: number; productCount: number; kind: 'auto' | 'manual'; }
-  interface ActivityEntry { timestamp: number; action: string; productCount: number; ip: string; note?: string; }
+  interface ActivityEntry { timestamp: number; action: string; productCount: number; ip: string; username?: string; note?: string; }
   const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [backupsLoading, setBackupsLoading] = useState(false);
   const [restoreStatus, setRestoreStatus] = useState('');
 
   // ── Check server-side session on mount ──
-  // We probe a protected endpoint with a no-op POST. If it returns 401 we
-  // show the login form; if it returns anything else (200, 503 because no
-  // products, etc.) the session is valid.
+  // The session endpoint also tells us which admin is signed in.
   useEffect(() => {
     (async () => {
       try {
-        // GET /api/products is public; instead we use a HEAD-style check via
-        // a tiny session-validation endpoint. Since there isn't one, we
-        // attempt the products POST with the current list (initially empty).
-        // A cleaner approach is a dedicated /api/admin-session endpoint;
-        // for now we just attempt to refresh the page state by hitting the
-        // products GET (which always works) and let the user log in manually.
         const res = await fetch('/api/admin-session', { credentials: 'same-origin' });
-        if (res.ok) setIsLoggedIn(true);
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentAdmin(data.username || 'Lorik');
+          setIsLoggedIn(true);
+        }
       } catch { /* not logged in */ }
       setAuthChecked(true);
     })();
@@ -161,11 +163,13 @@ export default function AdminPage() {
       const res = await fetch('/api/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: password.slice(0, 128) }),
+        body: JSON.stringify({ username: loginName.trim(), password: password.slice(0, 128) }),
         credentials: 'same-origin',
       });
 
       if (res.ok) {
+        const data = await res.json();
+        setCurrentAdmin(data.username || 'Lorik');
         setIsLoggedIn(true);
         setLoginError('');
         setLockoutInfo(null);
@@ -203,6 +207,38 @@ export default function AdminPage() {
       await fetch('/api/admin-logout', { method: 'POST', credentials: 'same-origin' });
     } catch { /* ignore */ }
     setIsLoggedIn(false);
+    setCurrentAdmin('');
+  };
+
+  const loadAdminUsers = async () => {
+    const res = await fetch('/api/admin-users', { credentials: 'same-origin', cache: 'no-store' });
+    if (res.ok) setAdminUsers(await res.json());
+    else setAdminUsersMessage('Could not load admin users.');
+  };
+
+  const handleCreateAdmin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setAdminUsersMessage('');
+    const res = await fetch('/api/admin-users', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ name: newAdminName.trim(), password: newAdminPassword }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setNewAdminPassword('');
+    if (!res.ok) { setAdminUsersMessage(data.error || 'Could not add admin.'); return; }
+    setAdminUsersMessage(`${data.name} can now sign in with their own password.`);
+    setNewAdminName('');
+    loadAdminUsers();
+  };
+
+  const handleRemoveAdmin = async (name: string) => {
+    if (!confirm(`Remove ${name}'s admin access?`)) return;
+    const res = await fetch('/api/admin-users', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ name }),
+    });
+    setAdminUsersMessage(res.ok ? `${name}'s admin access was removed.` : 'Could not remove admin.');
+    if (res.ok) loadAdminUsers();
   };
 
   // ── Backup tab helpers ─────────────────────────────────────────────
@@ -227,13 +263,14 @@ export default function AdminPage() {
   // Load backups when the tab opens
   useEffect(() => {
     if (activeTab === 'backups' && isLoggedIn) loadBackups();
+    if (activeTab === 'admins' && currentAdmin === 'Lorik') loadAdminUsers();
     if (isLoggedIn) {
       fetch('/api/pricing-rules', { cache: 'no-store' })
         .then(r => (r.ok ? r.json() : null))
         .then(d => { if (d && typeof d === 'object') setPricingRules(d as PricingRules); })
         .catch(() => { /* keep defaults */ });
     }
-  }, [activeTab, isLoggedIn]);
+  }, [activeTab, isLoggedIn, currentAdmin]);
 
   // ── Orders ────────────────────────────────────────────────────────────
   const loadOrders = async () => {
@@ -548,6 +585,7 @@ export default function AdminPage() {
     if (isAdding) {
       const newProduct: Product = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        publishedBy: currentAdmin || 'Lorik',
         name: cleanName,
         price: cleanPrice,
         priceMax: cleanPriceMax,
@@ -871,6 +909,17 @@ export default function AdminPage() {
             </div>
           ) : (
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <label style={{ fontSize: 12, color: '#666' }}>
+                {language === 'sq' ? 'Emri i adminit' : 'Admin name'}
+                <input
+                  className="ds-input"
+                  value={loginName}
+                  onChange={e => setLoginName(e.target.value.slice(0, 32))}
+                  autoComplete="username"
+                  required
+                  style={{ width: '100%', marginTop: 6 }}
+                />
+              </label>
               <PasswordInput
                 placeholder={t.admin.password}
                 className="ds-input"
@@ -921,7 +970,7 @@ export default function AdminPage() {
             style={{ height: 36, width: 'auto', display: 'block' }}
           />
           <p style={{ fontSize: 10, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 8 }}>
-            Admin Panel
+            Admin Panel · {currentAdmin}
           </p>
         </div>
 
@@ -929,7 +978,7 @@ export default function AdminPage() {
             the top pushed the content down and wrapped on a laptop, and the
             sidebar was mostly empty anyway. */}
         <nav style={{ padding: '16px 0', display: 'flex', flexDirection: 'column' }}>
-          {(['products', 'featured', 'pricing', 'orders', 'images', 'backups'] as const).map(tab => {
+          {(['products', 'featured', 'pricing', 'orders', 'images', 'backups', ...(currentAdmin === 'Lorik' ? ['admins'] as const : [])] as const).map(tab => {
             const active = activeTab === tab;
             return (
               <button
@@ -958,7 +1007,9 @@ export default function AdminPage() {
                       ? `${language === 'sq' ? 'Porositë' : 'Orders'}${orders.length ? ` (${orders.length})` : ''}`
                       : tab === 'images'
                         ? (language === 'sq' ? 'Fotot e Faqes' : 'Site Images')
-                        : (language === 'sq' ? 'Backup & Aktiviteti' : 'Backups & Activity')}
+                        : tab === 'backups'
+                          ? (language === 'sq' ? 'Backup & Aktiviteti' : 'Backups & Activity')
+                          : (language === 'sq' ? 'Administratorët' : 'Administrators')}
               </button>
             );
           })}
@@ -1025,6 +1076,34 @@ export default function AdminPage() {
         {/* The single scrolling region. Because it has a real height, the
             sticky edit panel inside it finally works. */}
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+
+        {activeTab === 'admins' && currentAdmin === 'Lorik' && (
+          <div style={{ padding: 32, maxWidth: 780 }}>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 28, marginBottom: 8 }}>
+              {language === 'sq' ? 'Administratorët' : 'Administrators'}
+            </h2>
+            <p style={{ fontSize: 13, color: '#777', marginBottom: 24 }}>
+              {language === 'sq' ? 'Secili administrator hyn me emrin dhe fjalëkalimin e vet. Produktet e reja tregojnë kush i publikoi.' : 'Each admin signs in with their own name and password. New products show who published them.'}
+            </p>
+            <div style={{ background: '#fff', border: '1px solid #e8e0d4', padding: 24, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 17, marginBottom: 16 }}>{language === 'sq' ? 'Shto administrator' : 'Add administrator'}</h3>
+              <form onSubmit={handleCreateAdmin} style={{ display: 'grid', gap: 12 }}>
+                <input className="ds-input" aria-label="Admin name" placeholder="Name (for example, Naim or Arba)" value={newAdminName} onChange={e => setNewAdminName(e.target.value.slice(0, 32))} required />
+                <input className="ds-input" aria-label="New admin password" type="password" autoComplete="new-password" minLength={12} maxLength={128} placeholder="Password (at least 12 characters)" value={newAdminPassword} onChange={e => setNewAdminPassword(e.target.value)} required />
+                <button className="btn-dark" type="submit" style={{ justifySelf: 'start', padding: '12px 20px' }}>{language === 'sq' ? 'Shto administrator' : 'Add administrator'}</button>
+              </form>
+              {adminUsersMessage && <p role="status" style={{ marginTop: 12, fontSize: 12, color: '#666' }}>{adminUsersMessage}</p>}
+            </div>
+            <div style={{ background: '#fff', border: '1px solid #e8e0d4', padding: 24 }}>
+              {adminUsers.map(user => (
+                <div key={user.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 0', borderBottom: '1px solid #f0ebe3' }}>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{user.name}{user.name === 'Lorik' ? ' · Owner' : ''}</span>
+                  {user.name !== 'Lorik' && <button type="button" onClick={() => handleRemoveAdmin(user.name)} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid #c0392b', color: '#c0392b', cursor: 'pointer' }}>{language === 'sq' ? 'Hiq' : 'Remove'}</button>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── ORDERS TAB ── */}
         {activeTab === 'orders' && (
@@ -1729,6 +1808,9 @@ export default function AdminPage() {
                       <th style={{ padding: '12px 20px', textAlign: 'left', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
                         IP
                       </th>
+                      <th style={{ padding: '12px 20px', textAlign: 'left', fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                        {language === 'sq' ? 'Admini' : 'Admin'}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1751,6 +1833,7 @@ export default function AdminPage() {
                         </td>
                         <td style={{ padding: '14px 20px', fontFamily: 'var(--font-sans)', fontSize: 12, color: '#666' }}>{a.productCount}</td>
                         <td style={{ padding: '14px 20px', fontFamily: 'var(--font-sans)', fontSize: 11, color: '#999' }}>{a.ip}</td>
+                        <td style={{ padding: '14px 20px', fontFamily: 'var(--font-sans)', fontSize: 11, color: '#666' }}>{a.username || 'Lorik'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1839,6 +1922,9 @@ export default function AdminPage() {
                             print the fallback price field instead, so a product
                             could read 1.200€ here and 350€ to a customer. */}
                         {categoryLabels[product.category]} · {formatPrice(product)}
+                      </p>
+                      <p style={{ fontSize: 11, color: '#777', marginTop: 3 }}>
+                        {language === 'sq' ? 'Publikuar nga' : 'Published by'} {product.publishedBy || 'Lorik'}
                       </p>
                     </div>
 

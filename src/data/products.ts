@@ -62,6 +62,8 @@ export type Category =
 
 export interface Product {
   id: string;
+  /** Admin who first published this product. Historical products belong to Lorik. */
+  publishedBy?: string;
   name: string;
   price: number;
   priceMax?: number;
