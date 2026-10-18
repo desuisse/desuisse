@@ -45,27 +45,39 @@ function parseItems(raw: unknown): SubmittedItem[] {
 }
 
 /**
- * Re-price every line from the catalogue in Upstash. The browser's numbers are
- * only ever used as a fallback when the product has since been deleted, and
- * any disagreement is recorded on the order rather than silently accepted —
- * a cart sitting open for a week is the normal cause, an edited request the
- * interesting one.
+ * Re-price ordinary lines from the catalogue in Upstash. Removed products are
+ * rejected. Couple products need a manual price review until the cart sends
+ * both bands' options separately.
  */
-async function buildItems(submitted: SubmittedItem[]): Promise<{ items: OrderItem[]; adjusted: boolean }> {
+async function buildItems(submitted: SubmittedItem[]): Promise<{ items: OrderItem[]; adjusted: boolean; invalid: boolean }> {
   const catalogue = (await kvGetJson<Product[]>(PRODUCTS_KV_KEY)) ?? [];
   let adjusted = false;
+  let invalid = false;
 
-  const items = submitted.map(line => {
+  const items = submitted.flatMap(line => {
     const product = catalogue.find(p => p.id === line.productId);
+    if (!product) {
+      invalid = true;
+      return [];
+    }
 
     let unitPrice: number;
-    if (product?.hasCoupleOption) {
+    if (product.hasCoupleOption) {
       // A couple piece is two bands with their own metals and sizes plus one
-      // stone surcharge; the server cannot re-derive that from a single line,
-      // so take the submitted figure (bounded) rather than flagging every
-      // couple order as a price mismatch.
-      unitPrice = Math.min(999999, Math.max(0, line.unitPrice ?? 0));
-    } else if (product) {
+      // stone surcharge. The old cart does not send both sets of selections,
+      // so flag these orders for manual price review and reject prices below
+      // the cheapest available single band.
+      const minimum = Math.min(...(product.materialVariants || [])
+        .map(variant => variant.price)
+        .filter(price => Number.isFinite(price) && price > 0));
+      const floor = Number.isFinite(minimum) ? minimum : product.price;
+      if (!Number.isFinite(line.unitPrice) || (line.unitPrice ?? 0) < floor) {
+        invalid = true;
+        return [];
+      }
+      unitPrice = Math.min(999999, line.unitPrice!);
+      adjusted = true;
+    } else {
       unitPrice = resolveUnitPrice(product, {
         variantName: line.material,
         size: line.size,
@@ -73,12 +85,9 @@ async function buildItems(submitted: SubmittedItem[]): Promise<{ items: OrderIte
         width: line.width,
       });
       if (line.unitPrice !== undefined && Math.abs(line.unitPrice - unitPrice) > 0.5) adjusted = true;
-    } else {
-      unitPrice = Math.max(0, line.unitPrice ?? 0);
-      adjusted = true;
     }
 
-    return {
+    return [{
       productId: line.productId,
       name: product?.name ?? line.productId,
       image: product?.image,
@@ -89,10 +98,10 @@ async function buildItems(submitted: SubmittedItem[]): Promise<{ items: OrderIte
       qty: line.qty,
       unitPrice: Math.round(unitPrice * 100) / 100,
       lineTotal: Math.round(unitPrice * line.qty * 100) / 100,
-    };
+    }];
   });
 
-  return { items, adjusted };
+  return { items, adjusted, invalid };
 }
 
 function sanitize(s: unknown, max: number): string {
@@ -169,7 +178,10 @@ export async function POST(req: NextRequest) {
   // Cryptographically secure order ID
   const orderId = `DS-${randomBytes(6).toString('hex').toUpperCase()}`;
 
-  const { items, adjusted } = await buildItems(parseItems(b.items));
+  const { items, adjusted, invalid } = await buildItems(parseItems(b.items));
+  if (invalid) {
+    return NextResponse.json({ error: 'A product or price has changed. Please update your cart.' }, { status: 400 });
+  }
   if (items.length === 0) {
     return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
   }
