@@ -42,13 +42,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'deSuisse Luxury Jewellery' }],
   creator: 'deSuisse',
   publisher: 'deSuisse',
-  alternates: { canonical: 'https://desuisse.com' },
   openGraph: {
     title: 'deSuisse — Luxury Jewellery',
     description:
       'Engagement rings, wedding bands, and bespoke fine jewellery. Boutiques in Karlovy Vary and Pejë.',
     type: 'website',
-    url: 'https://desuisse.com',
     siteName: 'deSuisse',
     locale: 'en_GB',
     images: [{
