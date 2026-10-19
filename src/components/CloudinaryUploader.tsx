@@ -2,29 +2,16 @@
 /**
  * CloudinaryUploader
  * ------------------
- * Drop-in image upload widget that uploads directly from the browser to
- * Cloudinary using an unsigned upload preset. After upload completes,
- * calls onUploaded() with the final URL.
- *
- * Why unsigned: it's far simpler than the signed flow and acceptable for
- * an admin-only panel. The upload preset on the Cloudinary side enforces:
- *   - only images allowed (no executables, no PDFs)
- *   - max file size
- *   - auto-resize to web-friendly dimensions
- *   - server-side format optimisation (modern AVIF/WebP for browsers that
- *     support them, JPG fallback otherwise)
+ * Uploads directly to Cloudinary with a short-lived signature issued only
+ * to a signed-in admin. The Cloudinary API secret stays on the server.
+ * After upload completes, calls onUploaded() with the final URL.
  *
  * If Cloudinary ever rejects an upload, the error from their API is shown
  * to the user verbatim — no silent failures.
  */
 import { useState, useRef } from 'react';
 
-const CLOUD_NAME = 'dk6nmipy3';
-const UPLOAD_PRESET = 'desuisse_products';
-const UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
-
-// Reasonable client-side limits (Cloudinary preset enforces server-side
-// too, but checking here gives instant feedback rather than wasted upload).
+// Client-side limits prevent accidental large uploads.
 const MAX_FILE_BYTES = 10 * 1024 * 1024;   // 10 MB before upload
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
@@ -75,13 +62,27 @@ export default function CloudinaryUploader({ currentUrl, onUploaded, label, lang
     uploadToCloudinary(file);
   };
 
-  const uploadToCloudinary = (file: File) => {
+  const uploadToCloudinary = async (file: File) => {
     setUploading(true);
     setProgress(0);
 
+    let authorization: { cloudName: string; apiKey: string; timestamp: number; signature: string; assetFolder: string };
+    try {
+      const response = await fetch('/api/admin-upload-signature', { method: 'POST', cache: 'no-store' });
+      if (!response.ok) throw new Error('Admin sign-in or image upload configuration required');
+      authorization = await response.json();
+    } catch (err) {
+      setUploading(false);
+      setError(`${t.uploadFailed}: ${err instanceof Error ? err.message : 'authorization failed'}`);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_PRESET);
+    formData.append('api_key', authorization.apiKey);
+    formData.append('timestamp', String(authorization.timestamp));
+    formData.append('signature', authorization.signature);
+    formData.append('asset_folder', authorization.assetFolder);
 
     // XMLHttpRequest used (not fetch) because we need real upload progress
     const xhr = new XMLHttpRequest();
@@ -135,7 +136,7 @@ export default function CloudinaryUploader({ currentUrl, onUploaded, label, lang
       setError(`${t.uploadFailed}: network error`);
     });
 
-    xhr.open('POST', UPLOAD_URL);
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${encodeURIComponent(authorization.cloudName)}/image/upload`);
     xhr.send(formData);
   };
 
