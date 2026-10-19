@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
   }
 
   user.passwordHash = await hashPassword(newPassword!);
+  user.passwordChangedAt = Date.now();
   const saved = await saveUser(user);
   if (!saved) {
     return NextResponse.json({ error: 'Could not update password' }, { status: 503 });

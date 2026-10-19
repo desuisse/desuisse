@@ -68,16 +68,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: GENERIC_MESSAGE });
   }
 
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = process.env.NODE_ENV === 'production' ? 'https://desuisse.com' : req.nextUrl.origin;
   const resetUrl = `${baseUrl}/account/reset-password?token=${encodeURIComponent(token)}`;
   const email_ = passwordResetEmail({ name: user.name, resetUrl, language });
   await sendEmail({ to: user.email, subject: email_.subject, html: email_.html });
 
   return NextResponse.json({ message: GENERIC_MESSAGE });
-}
-
-function getBaseUrl(req: NextRequest): string {
-  const proto = req.headers.get('x-forwarded-proto') ?? 'https';
-  const host = req.headers.get('host') ?? 'desuisse.com';
-  return `${proto}://${host}`;
 }

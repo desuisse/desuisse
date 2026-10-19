@@ -101,7 +101,8 @@ export async function POST(req: NextRequest) {
     }, { status: 201 });
   }
 
-  const verifyUrl = `${getBaseUrl(req)}/api/auth/verify?token=${encodeURIComponent(token)}`;
+  const baseUrl = process.env.NODE_ENV === 'production' ? 'https://desuisse.com' : req.nextUrl.origin;
+  const verifyUrl = `${baseUrl}/api/auth/verify?token=${encodeURIComponent(token)}`;
   const email_ = verificationEmail({ name: user.name, verifyUrl, language });
   const sent = await sendEmail({ to: user.email, subject: email_.subject, html: email_.html });
 
@@ -115,12 +116,4 @@ export async function POST(req: NextRequest) {
     pendingVerification: true,
     message: 'Account created. Please check your email to verify your address.',
   }, { status: 201 });
-}
-
-/** Determine the base URL of the deployed site for building absolute links. */
-function getBaseUrl(req: NextRequest): string {
-  // Vercel sets these automatically
-  const proto = req.headers.get('x-forwarded-proto') ?? 'https';
-  const host = req.headers.get('host') ?? 'desuisse.com';
-  return `${proto}://${host}`;
 }

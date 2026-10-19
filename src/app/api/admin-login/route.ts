@@ -79,6 +79,14 @@ export async function POST(req: NextRequest) {
   }
 
   const requestedUser = typeof username === 'string' ? username.trim() : '';
+  const accountKey = `admin-login-user:${(requestedUser || 'Lorik').toLowerCase()}`;
+  const accountLimit = await checkAndRecord({ key: accountKey, max: MAX_ATTEMPTS, windowSeconds: WINDOW_SECONDS });
+  if (!accountLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts', remainingMs: accountLimit.remainingMs },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(accountLimit.remainingMs / 1000)) } },
+    );
+  }
   const authenticatedUser = requestedUser === '' || requestedUser.toLowerCase() === 'lorik'
     ? (safeCompare(password, serverPwd) ? 'Lorik' : null)
     : await verifyAdminUser(requestedUser, password);
@@ -88,6 +96,7 @@ export async function POST(req: NextRequest) {
 
   // Success — clear the rate counter so the window resets for this IP
   await clear(rateKey);
+  await clear(accountKey);
 
   // Create a server-side session
   const token = await createSession(authenticatedUser);

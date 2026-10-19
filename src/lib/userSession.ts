@@ -18,6 +18,7 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { getRedis } from './upstash';
 import { generateToken } from './auth';
+import { getUserById } from './userStore';
 
 const COOKIE_NAME = 'ds_user_session';
 const SESSION_KEY = (id: string) => `ds:user-session:${id}`;
@@ -53,7 +54,10 @@ export async function getUserIdFromSession(sessionId: string): Promise<string | 
   if (!r) return null;
   try {
     const rec = await r.get<UserSessionRecord>(SESSION_KEY(sessionId));
-    return rec?.userId ?? null;
+    if (!rec) return null;
+    const user = await getUserById(rec.userId);
+    if (!user || (user.passwordChangedAt && rec.createdAt <= user.passwordChangedAt)) return null;
+    return rec.userId;
   } catch (err) {
     console.error('[userSession] resolve failed:', err);
     return null;

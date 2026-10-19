@@ -33,6 +33,7 @@ export interface User {
   passwordHash: string;
   emailVerified: boolean;
   createdAt: number;
+  passwordChangedAt?: number; // sessions created before this time are invalid
   wishlist: string[];     // array of product IDs
 }
 
@@ -186,13 +187,8 @@ export async function consumeVerificationToken(token: string): Promise<string | 
   const r = getRedis();
   if (!r) return null;
   try {
-    const rec = await r.get<TokenRecord>(VERIFY_KEY(token));
-    if (!rec) return null;
-    if (rec.expiresAt < Date.now()) {
-      await r.del(VERIFY_KEY(token));
-      return null;
-    }
-    await r.del(VERIFY_KEY(token)); // single-use
+    const rec = await r.getdel<TokenRecord>(VERIFY_KEY(token));
+    if (!rec || rec.expiresAt < Date.now()) return null;
     return rec.userId;
   } catch (err) {
     console.error('[userStore] consumeVerificationToken failed:', err);
@@ -227,13 +223,8 @@ export async function consumeResetToken(token: string): Promise<string | null> {
   const r = getRedis();
   if (!r) return null;
   try {
-    const rec = await r.get<TokenRecord>(RESET_KEY(token));
-    if (!rec) return null;
-    if (rec.expiresAt < Date.now()) {
-      await r.del(RESET_KEY(token));
-      return null;
-    }
-    await r.del(RESET_KEY(token));
+    const rec = await r.getdel<TokenRecord>(RESET_KEY(token));
+    if (!rec || rec.expiresAt < Date.now()) return null;
     return rec.userId;
   } catch (err) {
     console.error('[userStore] consumeResetToken failed:', err);
