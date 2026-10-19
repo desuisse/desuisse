@@ -57,9 +57,10 @@ Your colleague can use the admin panel to:
 
 Admin photo uploads require `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and
 `CLOUDINARY_API_SECRET` in Vercel's server environment. Set them before deploying
-the signed uploader. After deployment, disable or delete the old unsigned
-`desuisse_products` upload preset in Cloudinary. The old preset remains usable
-until it is disabled, even after the website code stops using it.
+the signed uploader. After deployment, change the old `desuisse_products`
+upload preset's Signing mode from Unsigned to Signed in Cloudinary. The old
+preset remains publicly usable until that change, even after the website code
+stops using it.
 
 ---
 
