@@ -221,3 +221,13 @@ If your product doesn't appear on the website after saving:
 2. Hard-refresh the page (close the tab fully, reopen)
 3. Check on a different device — sometimes your phone caches more
    aggressively than your laptop
+
+---
+
+## Adding a jewellery set
+
+1. Open `/admin` → **Products** → **Add a set**.
+2. Enter the set name and the price for the complete set. The SKU is optional.
+3. For the earrings, ring, and necklace, enter the details shown on each certificate: model number, diamond carats, colour/clarity, colour stone carats, and gold karat/weight. Fill in only the fields you have; each piece needs at least one specification or a description. Additional descriptions, piece names, and individual reference prices are optional.
+4. Upload the white-background product photo and, if available, the on-model photo. Both appear in the product gallery; the model photo also appears when shoppers hover over the product card.
+5. Save. The set appears under **Jewellery → Sets** and in the Sets shop category.

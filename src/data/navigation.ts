@@ -143,6 +143,7 @@ export const NAV_ITEMS: NavItem[] = [
           { href: '/shop?category=earrings', en: 'Earrings', sq: 'Vathë' },
           { href: '/shop?category=necklaces', en: 'Necklaces', sq: 'Qafore' },
           { href: '/shop?category=bracelets', en: 'Bracelets', sq: 'Byzylykë' },
+          { href: '/shop?category=sets', en: 'Sets', sq: 'Sete' },
         ],
       },
       {

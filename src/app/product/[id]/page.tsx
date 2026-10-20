@@ -10,7 +10,7 @@ import ProductCard from '@/components/ProductCard';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
-import { fetchProducts, Product, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, getWidthSurcharge, widthImageFor, materialLabel, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
+import { fetchProducts, Product, SetPieceKey, SET_PIECE_SPEC_FIELDS, MaterialVariant, formatPrice, formatVariantPrice, formatRingSizePrice, getDefaultVariant, isRingCategory, priceForRingSize, getStoneSurcharge, formatStoneSurcharge, getWidthSurcharge, widthImageFor, materialLabel, isEnquiryStone, enquiryHref, RING_SIZE_MIN, RING_SIZE_MAX, CATEGORIES, ENGRAVING_SYMBOLS } from '@/data/products';
 import RingSizeSlider from '@/components/RingSizeSlider';
 import FeatureCards, { FeatureItem } from '@/components/FeatureCards';
 import { sanitizeEngraving } from '@/lib/security';
@@ -631,6 +631,7 @@ export default function ProductPage() {
   }, []);
   const [selectedColor, setSelectedColor] = useState('');
   const [activeImg, setActiveImg] = useState(0);
+  const [selectedSetPiece, setSelectedSetPiece] = useState<SetPieceKey>('earrings');
   const [engraving, setEngraving] = useState({ enabled: false, text: '', symbol: '' });
   const [couplePrice, setCouplePrice] = useState(0);
   const [scheduleModal, setScheduleModal] = useState(false);
@@ -900,8 +901,9 @@ export default function ProductPage() {
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: 12 }}>
               {images.map((img, i) => (
-                <button key={i} onClick={() => setActiveImg(i)} style={{ width: 80, height: 80, background: '#faf8f5', border: `2px solid ${activeImg === i ? '#c9a84c' : 'transparent'}`, cursor: 'pointer', padding: 0, overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.2s', position: 'relative' }}>
-                  <Image src={img} alt={`${product.name} ${i + 1}`} fill style={{ objectFit: 'cover' }} unoptimized />
+                <button key={i} onClick={() => setActiveImg(i)} aria-label={product.category === 'sets' ? (i === 0 ? 'White-background photo' : 'On-model photo') : `${product.name} photo ${i + 1}`} style={{ width: product.category === 'sets' ? 104 : 80, border: `2px solid ${activeImg === i ? '#c9a84c' : 'transparent'}`, background: '#faf8f5', cursor: 'pointer', padding: 0, overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.2s' }}>
+                  <span style={{ display: 'block', width: '100%', height: 78, position: 'relative' }}><Image src={img} alt={`${product.name} ${i + 1}`} fill style={{ objectFit: 'cover' }} unoptimized /></span>
+                  {product.category === 'sets' && <span style={{ display: 'block', padding: '5px 2px', fontSize: 10, color: '#555', fontFamily: 'var(--font-sans)' }}>{language === 'sq' ? (i === 0 ? 'Produkti' : 'Në model') : (i === 0 ? 'Product' : 'On model')}</span>}
                 </button>
               ))}
             </div>
@@ -922,6 +924,37 @@ export default function ProductPage() {
             {product.name}
           </h1>
           <div style={{ width: 40, height: 1, background: '#e8e0d4', marginBottom: 28 }} />
+
+          {product.category === 'sets' && product.setPieces && Object.keys(product.setPieces).length > 0 && (() => {
+            const keys: SetPieceKey[] = ['earrings', 'ring', 'necklace'];
+            const labels = language === 'sq'
+              ? { earrings: 'Vathët', ring: 'Unaza', necklace: 'Qaforja' }
+              : { earrings: 'Earrings', ring: 'Ring', necklace: 'Necklace' };
+            const active = product.setPieces[selectedSetPiece] ? selectedSetPiece : keys.find(key => product.setPieces?.[key]) || 'earrings';
+            const piece = product.setPieces[active];
+            return <section style={{ border: '1px solid #e8e0d4', marginBottom: 26, background: '#faf8f5' }} aria-label={language === 'sq' ? 'Detajet e setit' : 'Set details'}>
+              <div style={{ padding: '17px 18px 12px' }}>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 10, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#9a7f30', marginBottom: 5 }}>{language === 'sq' ? 'Pjesët e setit' : 'Explore the set'}</p>
+                <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#777' }}>{language === 'sq' ? 'Zgjidhni një pjesë për të parë detajet e saj.' : 'Choose a piece to see its details.'}</p>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '0 18px 16px' }}>
+                {keys.filter(key => product.setPieces?.[key]).map(key => <button key={key} type="button" onClick={() => setSelectedSetPiece(key)} aria-pressed={active === key} style={{ minHeight: 40, padding: '9px 15px', border: `1px solid ${active === key ? '#1a0a0a' : '#d9d0c3'}`, background: active === key ? '#1a0a0a' : '#fff', color: active === key ? '#fff' : '#444', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 12 }}>{labels[key]}</button>)}
+              </div>
+              {piece && <div style={{ borderTop: '1px solid #e8e0d4', background: '#fff', padding: '17px 18px 19px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                  <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, fontWeight: 400, color: '#1a0a0a' }}>{(language === 'sq' && piece.nameSq) || piece.name || labels[active]}</h2>
+                  {!!piece.price && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#806b32', whiteSpace: 'nowrap' }}>{language === 'sq' ? 'Veçmas' : 'Individual'}: {piece.price.toLocaleString('de-DE')}€</span>}
+                </div>
+                {SET_PIECE_SPEC_FIELDS.some(field => piece[field.key]) && <dl style={{ marginTop: 13, borderTop: '1px solid #eee8df' }}>
+                  {SET_PIECE_SPEC_FIELDS.filter(field => piece[field.key]).map(field => <div key={field.key} style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 0.8fr) minmax(0, 1.2fr)', gap: 12, padding: '9px 0', borderBottom: '1px solid #eee8df', fontFamily: 'var(--font-sans)', fontSize: 12, lineHeight: 1.5 }}>
+                    <dt style={{ color: '#8a8279' }}>{language === 'sq' ? field.sq : field.en}</dt>
+                    <dd style={{ color: '#302622', fontWeight: 600, overflowWrap: 'anywhere' }}>{piece[field.key]}</dd>
+                  </div>)}
+                </dl>}
+                {(piece.description || piece.descriptionSq) && <p style={{ fontFamily: 'var(--font-sans)', fontSize: 13, lineHeight: 1.8, color: '#555', marginTop: 7, whiteSpace: 'pre-line' }}>{language === 'sq' && piece.descriptionSq ? piece.descriptionSq : piece.description}</p>}
+              </div>}
+            </section>;
+          })()}
 
           {product.colorVariants && product.colorVariants.length > 0 && (
             <div style={rowStyle}>

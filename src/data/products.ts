@@ -58,7 +58,33 @@ export type Category =
   | 'eternity-rings'
   | 'earrings'
   | 'bracelets'
-  | 'necklaces';
+  | 'necklaces'
+  | 'sets';
+
+export type SetPieceKey = 'earrings' | 'ring' | 'necklace';
+export type SetPieceSpecKey = 'modelNumber' | 'diamondCarats' | 'diamondColorClarity' | 'colorStoneCarats' | 'goldKaratWeight';
+
+export const SET_PIECE_SPEC_FIELDS: { key: SetPieceSpecKey; en: string; sq: string; example: string }[] = [
+  { key: 'modelNumber', en: 'Model No', sq: 'Numri i modelit', example: 'YZ0059503' },
+  { key: 'diamondCarats', en: 'Diamonds ct', sq: 'Diamantë (ct)', example: '0.15' },
+  { key: 'diamondColorClarity', en: 'Color / Clarity', sq: 'Ngjyra / Pastërtia', example: 'F–G SI' },
+  { key: 'colorStoneCarats', en: 'Color Stone ct', sq: 'Gur me ngjyrë (ct)', example: '0.80' },
+  { key: 'goldKaratWeight', en: 'Gold K / Gr', sq: 'Ari K / Gr', example: '18K / 2.56gr' },
+];
+
+export interface SetPiece {
+  name?: string;
+  nameSq?: string;
+  description: string;
+  descriptionSq?: string;
+  /** Optional reference price for this piece. The set is sold at Product.price. */
+  price?: number;
+  modelNumber?: string;
+  diamondCarats?: string;
+  diamondColorClarity?: string;
+  colorStoneCarats?: string;
+  goldKaratWeight?: string;
+}
 
 export interface Product {
   id: string;
@@ -72,6 +98,7 @@ export interface Product {
   descriptionSq?: string;    // Albanian
   image: string;
   image2?: string;
+  setPieces?: Partial<Record<SetPieceKey, SetPiece>>;
   featured: boolean;
   materials: string[];
   materialVariants: MaterialVariant[];
@@ -142,6 +169,7 @@ export const CATEGORIES: { key: Category; en: string; sq: string }[] = [
   { key: 'earrings',         en: 'Earrings',         sq: 'Vathë' },
   { key: 'bracelets',        en: 'Bracelets',        sq: 'Byzylykë' },
   { key: 'necklaces',        en: 'Necklaces',        sq: 'Qafore' },
+  { key: 'sets',             en: 'Sets',             sq: 'Sete' },
 ];
 
 export const DEFAULT_PRODUCTS: Product[] = [];

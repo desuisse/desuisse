@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/LanguageContext';
 import { PricingRules, DEFAULT_PRICING_RULES, applyCaratRule, applyWidthRule, ruleForCategory, describeRule, describeWidthRule } from '@/data/pricingRules';
-import { fetchProducts, saveProductsToDb, Product, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, WIDTH_OPTIONS, WidthVariant, MaterialVariant, formatVariantPrice, formatPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
+import { fetchProducts, saveProductsToDb, Product, SetPiece, SetPieceKey, SET_PIECE_SPEC_FIELDS, DEFAULT_PRODUCTS, MATERIAL_OPTIONS, RING_SIZES, BRACELET_SIZES, NECKLACE_SIZES, CARATS, STONE_OPTIONS, STONE_SIZE_OPTIONS, CATEGORIES, WIDTH_OPTIONS, WidthVariant, MaterialVariant, formatVariantPrice, formatPrice, DEFAULT_VARIANT_NAME, isRingCategory } from '@/data/products';
 import { Order, OrderStatus, ORDER_STATUSES, summarise } from '@/lib/orders';
 import { DEFAULT_SITE_IMAGES, SiteImages } from '@/lib/siteImages';
 import { sanitizeText, sanitizeUrl, sanitizeNumber, isValidProduct, LIMITS } from '@/lib/security';
@@ -23,6 +23,7 @@ const EMPTY_PRODUCT: Omit<Product, 'id'> = {
   descriptionSq: '',
   image: '',
   image2: '',
+  setPieces: {},
   featured: false,
   materials: [],
   materialVariants: [],
@@ -469,6 +470,18 @@ export default function AdminPage() {
     setEditing(null);
   };
 
+  const startAddSet = () => {
+    setForm({ ...EMPTY_PRODUCT, category: 'sets' });
+    setIsAdding(true);
+    setEditing(null);
+  };
+
+  const changeCategory = (category: Product['category']) => {
+    setForm(prev => category === 'sets'
+      ? { ...prev, category, sizes: [], materials: [], materialVariants: [], colorVariants: [], widthVariants: [], stones: [], stoneSizes: [], stoneSurcharges: {}, hasCoupleOption: false, hasEngraving: false, priceMax: undefined }
+      : { ...prev, category, sizes: [] });
+  };
+
   const startEdit = (p: Product) => {
     setForm({
       name: p.name,
@@ -479,6 +492,7 @@ export default function AdminPage() {
       descriptionSq: p.descriptionSq || '',
       image: p.image,
       image2: p.image2 || '',
+      setPieces: p.setPieces || {},
       featured: p.featured,
       materials: p.materials || [],
       materialVariants: p.materialVariants || [],
@@ -523,10 +537,33 @@ export default function AdminPage() {
     const cleanSku = sanitizeText(form.sku || '', 50);
     const cleanPrice = sanitizeNumber(form.price, 0, 999999);
     const cleanPriceMax = form.priceMax ? sanitizeNumber(form.priceMax, 0, 999999) : undefined;
+    const cleanSetPieces = form.category === 'sets'
+      ? (['earrings', 'ring', 'necklace'] as SetPieceKey[]).reduce((pieces, key) => {
+          const piece = form.setPieces?.[key];
+          if (!piece) return pieces;
+          const description = sanitizeText(piece.description || '', LIMITS.DESCRIPTION);
+          const descriptionSq = sanitizeText(piece.descriptionSq || '', LIMITS.DESCRIPTION);
+          const name = sanitizeText(piece.name || '', LIMITS.PRODUCT_NAME);
+          const nameSq = sanitizeText(piece.nameSq || '', LIMITS.PRODUCT_NAME);
+          const price = piece.price ? sanitizeNumber(piece.price, 0, 999999) : undefined;
+          const specs = Object.fromEntries(SET_PIECE_SPEC_FIELDS.map(field => [field.key, sanitizeText(piece[field.key] || '', 100)])) as Pick<SetPiece, typeof SET_PIECE_SPEC_FIELDS[number]['key']>;
+          if (description || descriptionSq || name || nameSq || price || Object.values(specs).some(Boolean)) {
+            pieces[key] = { description, descriptionSq, name, nameSq, price, ...specs };
+          }
+          return pieces;
+        }, {} as NonNullable<Product['setPieces']>)
+      : undefined;
 
     if (!cleanName) { alert('Product name is required and must be valid text.'); return; }
     if (!cleanPrice) { alert('Price must be a valid number greater than 0.'); return; }
     if (!cleanImage) { alert('Please enter a valid https:// image URL.'); return; }
+    if (form.category === 'sets' && (['earrings', 'ring', 'necklace'] as SetPieceKey[]).some(key => {
+      const piece = cleanSetPieces?.[key];
+      return !piece || !(piece.description || piece.descriptionSq || SET_PIECE_SPEC_FIELDS.some(field => piece[field.key]));
+    })) {
+      alert(language === 'sq' ? 'Shtoni specifikimet ose një përshkrim për vathët, unazën dhe qaforen.' : 'Add specifications or a description for the earrings, ring, and necklace.');
+      return;
+    }
 
     // Sanitize material variant prices
     const cleanVariants = (form.materialVariants || []).map(v => ({
@@ -594,6 +631,7 @@ export default function AdminPage() {
         descriptionSq: cleanDescSq || undefined,
         image: cleanImage,
         image2: cleanImage2 || undefined,
+        setPieces: cleanSetPieces,
         featured: Boolean(form.featured),
         materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
         materialVariants: cleanVariants,
@@ -621,6 +659,7 @@ export default function AdminPage() {
               descriptionSq: cleanDescSq || undefined,
               image: cleanImage,
               image2: cleanImage2 || undefined,
+              setPieces: cleanSetPieces,
               featured: Boolean(form.featured),
               materials: cleanVariants.map(v => v.name.replace(' 14ct','').replace(' 18ct','')).filter((m, i, arr) => arr.indexOf(m) === i),
               materialVariants: cleanVariants,
@@ -1063,7 +1102,10 @@ export default function AdminPage() {
             <div style={{ display: 'flex', gap: 12, padding: '8px 0' }}>
               {saved && <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#27ae60', display: 'flex', alignItems: 'center', gap: 6 }}>✓ Saved!</span>}
               <button onClick={handleReset} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #e8e0d4', color: '#999', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Reset</button>
-              <button onClick={startAdd} className="btn-dark" style={{ padding: '16px 38px', fontSize: 13, letterSpacing: '0.14em' }}>+ {t.admin.addProduct}</button>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button onClick={startAdd} className="btn-dark" style={{ padding: '16px 38px', fontSize: 13, letterSpacing: '0.14em' }}>+ {t.admin.addProduct}</button>
+                <button onClick={startAddSet} style={{ padding: '16px 24px', border: '1px solid #c9a84c', background: '#fff', color: '#806b32', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>+ {language === 'sq' ? 'Shto set' : 'Add a set'}</button>
+              </div>
             </div>
           )}
           {activeTab === 'images' && (
@@ -2054,6 +2096,13 @@ export default function AdminPage() {
                   <input type="text" className="ds-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Adele" />
                 </div>
 
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>{t.admin.category}</label>
+                  <select className="ds-input" value={form.category} onChange={e => changeCategory(e.target.value as Product['category'])}>
+                    {CATEGORIES.map(cat => <option key={cat.key} value={cat.key}>{language === 'sq' ? cat.sq : cat.en}</option>)}
+                  </select>
+                </div>
+
                 {/* SKU */}
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>SKU</label>
@@ -2061,22 +2110,23 @@ export default function AdminPage() {
                 </div>
 
                 {/* Price */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: form.category === 'sets' ? '1fr' : '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>{t.admin.price} *</label>
                     <input type="number" className="ds-input" value={form.price || ''} onChange={e => setForm({ ...form, price: Number(e.target.value) })} placeholder="500" min="0" />
                     <p style={{ fontSize: 10, color: '#bbb', lineHeight: 1.5, marginTop: 5 }}>
-                      {language === 'sq'
-                        ? 'Rezervë — përdoret vetëm nëse produkti nuk ka materiale. Çmimi real vjen nga çmimet e materialeve më poshtë.'
-                        : 'Fallback only — used if the product has no materials. The real price comes from the material prices below.'}
+                      {form.category === 'sets'
+                        ? (language === 'sq' ? 'Çmimi për setin e plotë.' : 'Price for the complete set.')
+                        : (language === 'sq' ? 'Rezervë — përdoret vetëm nëse produkti nuk ka materiale. Çmimi real vjen nga çmimet e materialeve më poshtë.' : 'Fallback only — used if the product has no materials. The real price comes from the material prices below.')}
                     </p>
                   </div>
-                  <div>
+                  {form.category !== 'sets' && <div>
                     <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>Max Price</label>
                     <input type="number" className="ds-input" value={form.priceMax || ''} onChange={e => setForm({ ...form, priceMax: e.target.value ? Number(e.target.value) : undefined })} placeholder="1000" min="0" />
-                  </div>
+                  </div>}
                 </div>
 
+                {form.category !== 'sets' && <>
                 {/* Apply the category's formula to the ticked carat materials */}
                 {activeRule && (
                   <div style={{ border: '1px solid #c9a84c', background: '#fdfaf3', padding: '12px 14px' }}>
@@ -2221,16 +2271,6 @@ export default function AdminPage() {
                       })}
                     </div>
                   )}
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>{t.admin.category}</label>
-                  <select className="ds-input" value={form.category} onChange={e => setForm({ ...form, category: e.target.value as Product['category'], sizes: [] })}>
-                    {CATEGORIES.map(cat => (
-                      <option key={cat.key} value={cat.key}>{language === 'sq' ? cat.sq : cat.en}</option>
-                    ))}
-                  </select>
                 </div>
 
                 {/* Materials & Carats — separate selectors */}
@@ -2585,6 +2625,35 @@ export default function AdminPage() {
                   </label>
                 </div>
 
+                </>}
+
+                {form.category === 'sets' && (
+                  <div style={{ padding: '18px', background: '#faf8f5', border: '1px solid #e8e0d4' }}>
+                    <p style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: '#1a0a0a', marginBottom: 4 }}>{language === 'sq' ? 'Pjesët e setit' : 'Pieces in this set'}</p>
+                    <p style={{ fontSize: 11, color: '#777', lineHeight: 1.6, marginBottom: 18 }}>{language === 'sq' ? 'Vendosni specifikimet nga certifikata për secilën pjesë. Plotësoni vetëm fushat që i dini. Seti shitet me çmimin më sipër.' : 'Enter the certificate details for each piece. Fill only the fields you know. The complete set uses the price above.'}</p>
+                    {(['earrings', 'ring', 'necklace'] as SetPieceKey[]).map(key => {
+                      const labels = { earrings: language === 'sq' ? 'Vathët' : 'Earrings', ring: language === 'sq' ? 'Unaza' : 'Ring', necklace: language === 'sq' ? 'Qaforja' : 'Necklace' };
+                      const piece: SetPiece = form.setPieces?.[key] || { description: '' };
+                      const updatePiece = (patch: Partial<SetPiece>) => setForm(prev => ({ ...prev, setPieces: { ...prev.setPieces, [key]: { ...prev.setPieces?.[key], description: prev.setPieces?.[key]?.description || '', ...patch } } }));
+                      return (
+                        <div key={key} style={{ borderTop: '1px solid #e8e0d4', paddingTop: 16, marginTop: 16, display: 'grid', gap: 9 }}>
+                          <h4 style={{ fontSize: 13, fontWeight: 700, color: '#1a0a0a' }}>{labels[key]}</h4>
+                          <input className="ds-input" aria-label={`${labels[key]} name`} placeholder={language === 'sq' ? 'Emri (opsional)' : 'Piece name (optional)'} value={piece.name || ''} onChange={e => updatePiece({ name: e.target.value })} />
+                          <input className="ds-input" aria-label={`${labels[key]} name in Albanian`} placeholder="Emri në shqip (opsional)" value={piece.nameSq || ''} onChange={e => updatePiece({ nameSq: e.target.value })} />
+                          <input className="ds-input" type="number" min="0" aria-label={`${labels[key]} price`} placeholder={language === 'sq' ? 'Çmimi individual në € (opsional)' : 'Individual price in € (optional)'} value={piece.price || ''} onChange={e => updatePiece({ price: e.target.value ? Number(e.target.value) : undefined })} />
+                          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#806b32', marginTop: 5 }}>{language === 'sq' ? 'Specifikimet e certifikatës' : 'Certificate specifications'}</p>
+                          {SET_PIECE_SPEC_FIELDS.map(field => <label key={field.key} style={{ display: 'grid', gap: 5, fontFamily: 'var(--font-sans)', fontSize: 11, color: '#666' }}>
+                            {language === 'sq' ? field.sq : field.en}
+                            <input className="ds-input" maxLength={100} placeholder={field.example} value={piece[field.key] || ''} onChange={e => updatePiece({ [field.key]: e.target.value })} />
+                          </label>)}
+                          <textarea className="ds-textarea" aria-label={`${labels[key]} additional details in English`} placeholder={language === 'sq' ? 'Detaje shtesë në anglisht (opsionale)' : 'Additional details in English (optional)'} value={piece.description || ''} onChange={e => updatePiece({ description: e.target.value })} style={{ minHeight: 70 }} />
+                          <textarea className="ds-textarea" aria-label={`${labels[key]} additional details in Albanian`} placeholder="Detaje shtesë në shqip (opsionale)" value={piece.descriptionSq || ''} onChange={e => updatePiece({ descriptionSq: e.target.value })} style={{ minHeight: 60 }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Description — bilingual */}
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 6 }}>
@@ -2609,7 +2678,7 @@ export default function AdminPage() {
 
                 {/* Images — colleague-friendly upload UI */}
                 <div>
-                  <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 8 }}>{t.admin.image} * (Main)</label>
+                  <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 8 }}>{form.category === 'sets' ? (language === 'sq' ? 'Foto me sfond të bardhë *' : 'White-background photo *') : `${t.admin.image} * (Main)`}</label>
                   <CloudinaryUploader
                     currentUrl={form.image}
                     onUploaded={(url) => setForm({ ...form, image: url })}
@@ -2633,7 +2702,7 @@ export default function AdminPage() {
 
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999', display: 'block', marginBottom: 8 }}>
-                    {t.admin.image} (Hover) — {language === 'sq' ? 'opsionale' : 'optional'}
+                    {form.category === 'sets' ? (language === 'sq' ? 'Foto me modelin (opsionale)' : 'On-model photo (optional)') : `${t.admin.image} (Hover) — ${language === 'sq' ? 'opsionale' : 'optional'}`}
                   </label>
                   <CloudinaryUploader
                     currentUrl={form.image2 || ''}
