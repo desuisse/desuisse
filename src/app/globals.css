@@ -1,6 +1,4 @@
-/* Fonts are loaded via next/font in layout.tsx and exposed as CSS variables:
-   --font-cormorant and --font-montserrat. They self-host with the build,
-   so they always work on every device without third-party DNS. */
+/* Fonts load in layout.tsx with local fallbacks when Google Fonts is unavailable. */
 
 @tailwind base;
 @tailwind components;
@@ -30,8 +28,8 @@
 
   /* Header height — referenced by the mega menu so the two can't disagree */
   --ds-header-h: 84px;
-  --font-serif: var(--font-cormorant, 'Cormorant Garamond', Georgia, 'Times New Roman', serif);
-  --font-sans:  var(--font-montserrat, 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif);
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
 * {
