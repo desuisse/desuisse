@@ -891,18 +891,18 @@ export default function ProductPage() {
       </div>
 
       {/* ── Two-column product section ── */}
-      <section style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 40px 60px', display: 'grid', gridTemplateColumns: 'minmax(0, 0.9fr) minmax(0, 1.1fr)', gap: 40, alignItems: 'start' }} className="product-two-col">
+      <section style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 40px 60px', display: 'grid', gridTemplateColumns: product.category === 'sets' ? 'minmax(0, 1fr) minmax(0, 1fr)' : 'minmax(0, 0.9fr) minmax(0, 1.1fr)', gap: 40, alignItems: 'start' }} className="product-two-col">
 
         {/* LEFT: image */}
         <div className="product-gallery">
-          <div className="product-main-image" style={{ background: '#faf8f5', position: 'relative', aspectRatio: '1', marginBottom: 14, overflow: 'hidden' }}>
-            <Image src={images[activeImg] || images[0]} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
+          <div className="product-main-image" style={{ background: product.category === 'sets' ? '#fff' : '#faf8f5', position: 'relative', aspectRatio: product.category === 'sets' ? '3 / 4' : '1', marginBottom: 14, overflow: 'hidden' }}>
+            <Image src={images[activeImg] || images[0]} alt={product.name} fill style={{ objectFit: product.category === 'sets' ? 'contain' : 'cover' }} unoptimized />
           </div>
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: 12 }}>
               {images.map((img, i) => (
-                <button key={i} onClick={() => setActiveImg(i)} aria-label={product.category === 'sets' ? (i === 0 ? 'White-background photo' : 'On-model photo') : `${product.name} photo ${i + 1}`} style={{ width: product.category === 'sets' ? 104 : 80, border: `2px solid ${activeImg === i ? '#c9a84c' : 'transparent'}`, background: '#faf8f5', cursor: 'pointer', padding: 0, overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.2s' }}>
-                  <span style={{ display: 'block', width: '100%', height: 78, position: 'relative' }}><Image src={img} alt={`${product.name} ${i + 1}`} fill style={{ objectFit: 'cover' }} unoptimized /></span>
+                <button key={i} onClick={() => setActiveImg(i)} aria-label={product.category === 'sets' ? (i === 0 ? 'White-background photo' : 'On-model photo') : `${product.name} photo ${i + 1}`} style={{ width: product.category === 'sets' ? 112 : 80, border: `2px solid ${activeImg === i ? '#c9a84c' : 'transparent'}`, background: product.category === 'sets' ? '#fff' : '#faf8f5', cursor: 'pointer', padding: 0, overflow: 'hidden', flexShrink: 0, transition: 'border-color 0.2s' }}>
+                  <span style={{ display: 'block', width: '100%', height: product.category === 'sets' ? 96 : 78, position: 'relative' }}><Image src={img} alt={`${product.name} ${i + 1}`} fill style={{ objectFit: product.category === 'sets' ? 'contain' : 'cover' }} unoptimized /></span>
                   {product.category === 'sets' && <span style={{ display: 'block', padding: '5px 2px', fontSize: 10, color: '#555', fontFamily: 'var(--font-sans)' }}>{language === 'sq' ? (i === 0 ? 'Produkti' : 'Në model') : (i === 0 ? 'Product' : 'On model')}</span>}
                 </button>
               ))}
