@@ -46,13 +46,13 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <>
-      <div className="product-card">
+      <div className={`product-card${product.category === 'sets' ? ' product-card--set' : ''}`}>
         <div className="product-img-wrap" onClick={open} role="link" tabIndex={0}
           onKeyDown={e => { if (e.key === 'Enter') open(); }}>
 
-          <Image src={product.image} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
+          <Image src={product.image} alt={product.name} fill style={{ objectFit: product.category === 'sets' ? 'contain' : 'cover' }} unoptimized />
           {product.image2 && (
-            <Image src={product.image2} alt={`${product.name} alternate`} fill className="product-img-2" style={{ objectFit: 'cover' }} unoptimized />
+            <Image src={product.image2} alt={`${product.name} alternate`} fill className="product-img-2" style={{ objectFit: product.category === 'sets' ? 'contain' : 'cover' }} unoptimized />
           )}
 
           {/* Warm veil + hairline frame — depth without dirtying the photo */}

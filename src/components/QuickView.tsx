@@ -92,8 +92,8 @@ export default function QuickView({ product, onClose }: { product: Product; onCl
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(26,10,10,0.6)', zIndex: 300, backdropFilter: 'blur(3px)', animation: 'qvFadeIn 0.2s ease' }} />
       <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#fff', zIndex: 301, width: '90%', maxWidth: 880, maxHeight: '90vh', overflowY: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', animation: 'qvSlideIn 0.25s ease', boxShadow: '0 20px 80px rgba(26,10,10,0.25)' }} className="qv-modal">
         {/* Image */}
-        <div style={{ background: '#faf8f5', position: 'relative', minHeight: 420, overflow: 'hidden' }}>
-          <Image src={displayImage} alt={product.name} fill style={{ objectFit: 'cover' }} unoptimized />
+        <div style={{ background: product.category === 'sets' ? '#fff' : '#faf8f5', position: 'relative', minHeight: product.category === 'sets' ? 560 : 420, overflow: 'hidden' }}>
+          <Image src={displayImage} alt={product.name} fill style={{ objectFit: product.category === 'sets' ? 'contain' : 'cover' }} unoptimized />
         </div>
         {/* Details */}
         <div style={{ padding: '40px 36px', display: 'flex', flexDirection: 'column', position: 'relative' }}>

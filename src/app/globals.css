@@ -236,6 +236,10 @@ h1, h2, h3, h4, h5 {
   cursor: pointer;
   outline: none;
 }
+.product-card--set .product-img-wrap {
+  aspect-ratio: 3 / 4;
+  background: #fff;
+}
 .product-card .product-img-wrap:focus-visible { outline: 1px solid var(--ds-gold); outline-offset: 2px; }
 
 .product-card img {
@@ -245,6 +249,7 @@ h1, h2, h3, h4, h5 {
   transition: transform 1.1s cubic-bezier(0.2, 0, 0.2, 1);
 }
 .product-card:hover img { transform: scale(1.045); }
+.product-card--set:hover img { transform: none; }
 
 .product-card .product-img-2 {
   position: absolute;
