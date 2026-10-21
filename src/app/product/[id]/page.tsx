@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
+import ProductImageZoom from '@/components/ProductImageZoom';
 import { useWishlist } from '@/lib/WishlistContext';
 import { useCart } from '@/lib/CartContext';
 import { useLanguage } from '@/lib/LanguageContext';
@@ -631,7 +632,8 @@ export default function ProductPage() {
   }, []);
   const [selectedColor, setSelectedColor] = useState('');
   const [activeImg, setActiveImg] = useState(0);
-  const mainImageRef = useRef<HTMLDivElement>(null);
+  const mainImageRef = useRef<HTMLButtonElement>(null);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const [selectedSetPiece, setSelectedSetPiece] = useState<SetPieceKey>('earrings');
   const [engraving, setEngraving] = useState({ enabled: false, text: '', symbol: '' });
   const [couplePrice, setCouplePrice] = useState(0);
@@ -915,9 +917,13 @@ export default function ProductPage() {
 
         {/* LEFT: image */}
         <div className="product-gallery">
-          <div ref={mainImageRef} className="product-main-image" style={{ background: product.category === 'sets' ? '#fff' : '#faf8f5', position: 'relative', aspectRatio: product.category === 'sets' ? '3 / 4' : '1', maxHeight: product.category === 'sets' ? 'var(--set-gallery-max-height, 70svh)' : undefined, marginBottom: 14, overflow: 'hidden' }}>
+          <button type="button" ref={mainImageRef} className="product-main-image" onClick={() => setZoomOpen(true)} aria-label={language === 'sq' ? `Zmadho foton e ${product.name}` : `Zoom ${product.name} photo`} style={{ display: 'block', width: '100%', padding: 0, border: 0, cursor: 'zoom-in', background: product.category === 'sets' ? '#fff' : '#faf8f5', position: 'relative', aspectRatio: product.category === 'sets' ? '3 / 4' : '1', maxHeight: product.category === 'sets' ? 'var(--set-gallery-max-height, 70svh)' : undefined, marginBottom: 14, overflow: 'hidden' }}>
             <Image src={images[activeImg] || images[0]} alt={product.name} fill style={{ objectFit: product.category === 'sets' ? 'contain' : 'cover' }} unoptimized />
-          </div>
+            <span aria-hidden="true" style={{ position: 'absolute', right: 14, bottom: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 11px', background: 'rgba(255,255,255,0.95)', color: '#1a0a0a', border: '1px solid #e8e0d4', fontFamily: 'var(--font-sans)', fontSize: 11, zIndex: 1 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5M10.8 7.5v6.6M7.5 10.8h6.6"/></svg>
+              {language === 'sq' ? 'Zmadho' : 'Zoom'}
+            </span>
+          </button>
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: 12 }}>
               {images.map((img, i) => (
@@ -1258,6 +1264,17 @@ export default function ProductPage() {
             </div>
           </div>
         </>
+      )}
+
+      {zoomOpen && (
+        <ProductImageZoom
+          images={images}
+          initialIndex={activeImg}
+          productName={product.name}
+          language={language}
+          onClose={() => setZoomOpen(false)}
+          onImageChange={setActiveImg}
+        />
       )}
 
       <Footer />
