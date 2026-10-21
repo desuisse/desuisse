@@ -631,6 +631,7 @@ export default function ProductPage() {
   }, []);
   const [selectedColor, setSelectedColor] = useState('');
   const [activeImg, setActiveImg] = useState(0);
+  const mainImageRef = useRef<HTMLDivElement>(null);
   const [selectedSetPiece, setSelectedSetPiece] = useState<SetPieceKey>('earrings');
   const [engraving, setEngraving] = useState({ enabled: false, text: '', symbol: '' });
   const [couplePrice, setCouplePrice] = useState(0);
@@ -677,6 +678,25 @@ export default function ProductPage() {
 
   // Keep the selected material or colour photo in view when the customer changes it.
   useEffect(() => { setActiveImg(0); }, [selectedVariant, selectedColor, selectedWidth]);
+
+  // Keep the complete set photo inside the first viewport, whatever height the
+  // responsive header and browser leave above it. The image itself uses contain.
+  useEffect(() => {
+    if (product?.category !== 'sets') return;
+    const updateImageHeight = () => {
+      const image = mainImageRef.current;
+      if (!image) return;
+      const imageTop = image.getBoundingClientRect().top + window.scrollY;
+      const availableHeight = Math.max(120, window.innerHeight - imageTop - 16);
+      image.style.setProperty('--set-gallery-max-height', `${availableHeight}px`);
+    };
+    const frame = requestAnimationFrame(updateImageHeight);
+    window.addEventListener('resize', updateImageHeight);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', updateImageHeight);
+    };
+  }, [product?.category]);
 
   if (!product) return (
     <>
@@ -895,7 +915,7 @@ export default function ProductPage() {
 
         {/* LEFT: image */}
         <div className="product-gallery">
-          <div className="product-main-image" style={{ background: product.category === 'sets' ? '#fff' : '#faf8f5', position: 'relative', aspectRatio: product.category === 'sets' ? '3 / 4' : '1', marginBottom: 14, overflow: 'hidden' }}>
+          <div ref={mainImageRef} className="product-main-image" style={{ background: product.category === 'sets' ? '#fff' : '#faf8f5', position: 'relative', aspectRatio: product.category === 'sets' ? '3 / 4' : '1', maxHeight: product.category === 'sets' ? 'var(--set-gallery-max-height, 70svh)' : undefined, marginBottom: 14, overflow: 'hidden' }}>
             <Image src={images[activeImg] || images[0]} alt={product.name} fill style={{ objectFit: product.category === 'sets' ? 'contain' : 'cover' }} unoptimized />
           </div>
           {images.length > 1 && (
